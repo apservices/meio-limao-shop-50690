@@ -1,0 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  * {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: 'Playfair Display', serif;
+  }
+
+  :root {
+    /* Meio Limão Brand Colors - Tropical Chic */
+    --background: 48 100% 97%; /* Creme suave #FFF9EB */
+    --foreground: 0 0% 11%; /* Preto suave #1D1D1D */
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 11%;
+
+    --primary: 94 48% 60%; /* Verde-limão #8CC271 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 73 79% 82%; /* Limão suave #E6F5AA */
+    --secondary-foreground: 0 0% 11%;
+
+    --muted: 73 60% 94%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 73 79% 82%; /* Limão suave */
+    --accent-foreground: 0 0% 11%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 73 40% 88%;
+    --input: 73 40% 88%;
+    --ring: 94 48% 60%;
+
+    --radius: 1rem; /* Bordas mais arredondadas */
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(73, 79%, 82%) 0%, hsl(94, 48%, 60%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(73, 60%, 98%) 100%);
+    
+    /* Shadows */
+    --shadow-soft: 0 4px 24px -4px hsl(94, 48%, 60% / 0.12);
+    --shadow-hover: 0 8px 32px -8px hsl(94, 48%, 60% / 0.2);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 11%;
+    --sidebar-primary: 94 48% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 73 79% 94%;
+    --sidebar-accent-foreground: 0 0% 11%;
+    --sidebar-border: 73 40% 88%;
+    --sidebar-ring: 94 48% 60%;
+  }
+
+  .dark {
+    --background: 0 0% 11%;
+    --foreground: 48 100% 97%;
+
+    --card: 0 0% 14%;
+    --card-foreground: 48 100% 97%;
+
+    --popover: 0 0% 14%;
+    --popover-foreground: 48 100% 97%;
+
+    --primary: 94 48% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 94 25% 25%;
+    --secondary-foreground: 48 100% 97%;
+
+    --muted: 0 0% 20%;
+    --muted-foreground: 73 20% 70%;
+
+    --accent: 94 25% 25%;
+    --accent-foreground: 48 100% 97%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 48 100% 97%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 94 48% 60%;
+    
+    --sidebar-background: 0 0% 11%;
+    --sidebar-foreground: 48 100% 97%;
+    --sidebar-primary: 94 48% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 20%;
+    --sidebar-accent-foreground: 48 100% 97%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 94 48% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
