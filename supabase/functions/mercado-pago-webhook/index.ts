@@ -15,7 +15,7 @@ serve(async (req) => {
     const body = await req.json();
     console.log('Mercado Pago webhook received:', JSON.stringify(body, null, 2));
 
-    const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
+    const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') || Deno.env.get('MP_ACCESS_TOKEN');
     if (!accessToken) {
       throw new Error('Mercado Pago access token not configured');
     }

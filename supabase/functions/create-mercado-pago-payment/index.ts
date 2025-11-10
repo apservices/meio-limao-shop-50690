@@ -16,7 +16,7 @@ serve(async (req) => {
 
     console.log('Creating Mercado Pago payment for order:', orderId);
 
-    const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
+    const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN') || Deno.env.get('MP_ACCESS_TOKEN');
     if (!accessToken) {
       throw new Error('Mercado Pago access token not configured');
     }

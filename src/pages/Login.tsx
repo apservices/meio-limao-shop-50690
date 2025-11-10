@@ -37,7 +37,10 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold">Meio Limão</h1>
+          <Link to="/" className="inline-flex items-center space-x-2 mb-2">
+            <img src="/icon-192.png" alt="Meio Limão" className="h-12 w-12" />
+            <h1 className="text-3xl font-bold">Meio Limão</h1>
+          </Link>
           <p className="text-muted-foreground mt-2">Entre na sua conta</p>
         </div>
 

@@ -72,7 +72,7 @@ const Checkout = () => {
 
   const finalTotal = totalPrice + shippingCost;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
@@ -84,19 +84,85 @@ const Checkout = () => {
       });
 
       console.log("Dados validados:", validatedData);
+
+      // Criar order no banco
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: user?.id || '00000000-0000-0000-0000-000000000000',
+          email: validatedData.email,
+          total: finalTotal,
+          shipping_cents: Math.round(shippingCost * 100),
+          subtotal_cents: Math.round(totalPrice * 100),
+          total_cents: Math.round(finalTotal * 100),
+          status: 'pending',
+          payment_status: 'pending',
+          payment_method: validatedData.paymentMethod === 'credit' ? 'credit_card' : 'pix',
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Criar order_items
+      const orderItems = items.map(item => ({
+        order_id: orderData.id,
+        product_id: item.id,
+        name_snapshot: item.name,
+        size_snapshot: item.selectedSize,
+        qty: item.quantity,
+        unit_price_cents: Math.round(item.price * 100),
+        subtotal_cents: Math.round(item.price * item.quantity * 100),
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      // Se for PIX ou cartão, criar pagamento com Mercado Pago
+      const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
+        'create-mercado-pago-payment',
+        {
+          body: {
+            orderId: orderData.id,
+            items: items.map(item => ({
+              title: item.name,
+              quantity: item.quantity,
+              unit_price: item.price,
+            })),
+            payer: {
+              name: validatedData.name,
+              email: validatedData.email,
+            },
+          }
+        }
+      );
+
+      if (paymentError) throw paymentError;
+
+      // Redirecionar para Mercado Pago
+      if (paymentData?.init_point) {
+        clearCart();
+        window.location.href = paymentData.init_point;
+      } else {
+        throw new Error('Erro ao criar pagamento');
+      }
       
-      toast({
-        title: "Pedido confirmado! 🎉",
-        description: "Seu pedido foi processado com sucesso.",
-      });
-      
-      clearCart();
-      navigate("/");
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({
           title: "Erro de validação",
           description: error.issues[0].message,
+          variant: "destructive",
+        });
+      } else {
+        console.error('Erro ao finalizar pedido:', error);
+        toast({
+          title: "Erro ao finalizar pedido",
+          description: "Ocorreu um erro ao processar seu pedido. Tente novamente.",
           variant: "destructive",
         });
       }
@@ -183,31 +249,61 @@ const Checkout = () => {
                   </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="street">Rua</Label>
-                    <Input id="street" required />
+                    <Input 
+                      id="street" 
+                      value={formData.street}
+                      onChange={(e) => setFormData({...formData, street: e.target.value})}
+                      required 
+                    />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="number">Número</Label>
-                    <Input id="number" required />
+                    <Input 
+                      id="number"
+                      value={formData.number}
+                      onChange={(e) => setFormData({...formData, number: e.target.value})}
+                      required 
+                    />
                   </div>
                   <div className="md:col-span-2">
                     <Label htmlFor="complement">Complemento</Label>
-                    <Input id="complement" />
+                    <Input 
+                      id="complement"
+                      value={formData.complement}
+                      onChange={(e) => setFormData({...formData, complement: e.target.value})}
+                    />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="neighborhood">Bairro</Label>
-                    <Input id="neighborhood" required />
+                    <Input 
+                      id="neighborhood"
+                      value={formData.neighborhood}
+                      onChange={(e) => setFormData({...formData, neighborhood: e.target.value})}
+                      required 
+                    />
                   </div>
                   <div>
                     <Label htmlFor="city">Cidade</Label>
-                    <Input id="city" required />
+                    <Input 
+                      id="city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({...formData, city: e.target.value})}
+                      required 
+                    />
                   </div>
                   <div>
                     <Label htmlFor="state">Estado</Label>
-                    <Input id="state" maxLength={2} required />
+                    <Input 
+                      id="state"
+                      value={formData.state}
+                      onChange={(e) => setFormData({...formData, state: e.target.value.toUpperCase()})}
+                      maxLength={2}
+                      required 
+                    />
                   </div>
                 </div>
               </div>

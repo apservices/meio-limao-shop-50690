@@ -8,9 +8,10 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Logo & Description */}
           <div className="col-span-1 md:col-span-2">
-            <Link to="/" className="inline-block mb-4">
+            <Link to="/" className="inline-flex items-center space-x-2 mb-4">
+              <img src="/icon-192.png" alt="Meio Limão" className="h-10 w-10" />
               <span className="text-2xl font-serif font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                🍋 Meio Limão
+                Meio Limão
               </span>
             </Link>
             <p className="text-muted-foreground mb-4">
