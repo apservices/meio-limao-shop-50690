@@ -83,7 +83,7 @@ const Checkout = () => {
         paymentMethod,
       });
 
-      console.log("Dados validados:", validatedData);
+      // Removed console.log to prevent sensitive data exposure
 
       // Criar order no banco
       const { data: { user } } = await supabase.auth.getUser();

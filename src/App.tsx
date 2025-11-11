@@ -28,6 +28,9 @@ import Orders from "./pages/admin/Orders";
 import Coupons from "./pages/admin/Coupons";
 import Customers from "./pages/admin/Customers";
 import Reports from "./pages/admin/Reports";
+import NewArrivals from "./pages/NewArrivals";
+import Looks from "./pages/Looks";
+import AdminLooks from "./pages/admin/Looks";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +47,9 @@ const App = () => (
             <Route path="/produto/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/new-arrivals" element={<NewArrivals />} />
+            <Route path="/novidades" element={<NewArrivals />} />
+            <Route path="/looks" element={<Looks />} />
             <Route path="/account" element={<Account />} />
             <Route path="/guia-de-medidas" element={<SizeGuide />} />
             <Route path="/trocas" element={<ExchangePolicy />} />
@@ -114,6 +120,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/looks"
+              element={
+                <ProtectedRoute>
+                  <AdminLooks />
                 </ProtectedRoute>
               }
             />

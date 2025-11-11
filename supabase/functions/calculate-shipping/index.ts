@@ -33,9 +33,10 @@ serve(async (req) => {
 
     console.log('Calculating shipping for CEP:', cep);
 
-    const melhorEnvioToken = Deno.env.get('MELHOR_ENVIO_TOKEN') || Deno.env.get('VITE_MELHOR_ENVIO_ACCESS_TOKEN');
+    // Get Melhor Envio token from environment (production only)
+    const melhorEnvioToken = Deno.env.get('MELHOR_ENVIO_TOKEN');
     if (!melhorEnvioToken) {
-      throw new Error('Melhor Envio token not configured');
+      throw new Error('MELHOR_ENVIO_TOKEN not configured');
     }
 
     // Preparar produtos para a API do Melhor Envio
