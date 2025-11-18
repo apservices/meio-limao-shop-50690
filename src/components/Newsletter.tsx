@@ -1,15 +1,42 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Newsletter = () => {
   const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading">("idle");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Integração com serviço de email
-    console.log("Newsletter:", email);
-    setEmail("");
+    if (!email) return;
+
+    setStatus("loading");
+
+    try {
+      const { error } = await supabase.functions.invoke("subscribe-newsletter", {
+        body: {
+          email,
+          source: "newsletter_section",
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Você está na nossa lista! Confira seu e-mail para novidades.");
+      setEmail("");
+    } catch (error) {
+      console.error(error);
+      const message =
+        error instanceof Error ? error.message : "Não conseguimos salvar seu cadastro. Tente novamente.";
+      toast.error(message);
+    } finally {
+      setStatus("idle");
+    }
   };
 
   return (
@@ -34,8 +61,9 @@ const Newsletter = () => {
               required
               className="flex-1"
             />
-            <Button type="submit" size="lg">
-              Cadastrar
+            <Button type="submit" size="lg" disabled={status === "loading"}>
+              {status === "loading" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {status === "loading" ? "Enviando..." : "Cadastrar"}
             </Button>
           </form>
           

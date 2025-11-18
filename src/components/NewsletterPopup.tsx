@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const NewsletterPopup = () => {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const hasSeenPopup = localStorage.getItem("newsletter-popup-seen");
@@ -18,12 +21,36 @@ const NewsletterPopup = () => {
     }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem("newsletter-popup-seen", "true");
-    setOpen(false);
-    // Aqui você integraria com seu serviço de email
-    console.log("Email cadastrado:", email);
+    if (!email || loading) return;
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.functions.invoke("subscribe-newsletter", {
+        body: {
+          email,
+          source: "newsletter_popup",
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Cadastro confirmado! Seu cupom já está a caminho do seu e-mail.");
+      localStorage.setItem("newsletter-popup-seen", "true");
+      setOpen(false);
+      setEmail("");
+    } catch (error) {
+      console.error(error);
+      const message =
+        error instanceof Error ? error.message : "Não conseguimos salvar seu cadastro. Tente novamente.";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -57,8 +84,9 @@ const NewsletterPopup = () => {
               required
               className="text-center"
             />
-            <Button type="submit" className="w-full" size="lg">
-              Quero meu cupom BEMVINDAX
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? "Cadastrando..." : "Quero meu cupom BEMVINDAX"}
             </Button>
           </form>
           
