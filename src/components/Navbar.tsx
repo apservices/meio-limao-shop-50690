@@ -4,11 +4,17 @@ import { Search, ShoppingBag, Heart, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { totalItems } = useCart();
+  const { user, signOut } = useAuth();
+
+  const initials = user?.email ? user.email.charAt(0).toUpperCase() : "";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -70,8 +76,10 @@ const Navbar = () => {
             </div>
 
             {/* Wishlist */}
-            <Button variant="ghost" size="icon" className="hidden md:flex">
-              <Heart className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
+              <Link to="/account#wishlist">
+                <Heart className="h-5 w-5" />
+              </Link>
             </Button>
 
             {/* Cart */}
@@ -85,6 +93,28 @@ const Navbar = () => {
                 )}
               </Link>
             </Button>
+
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full border">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>{initials || "?"}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/account">Minha conta</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => signOut()}>Sair</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="outline" size="sm" className="hidden md:inline-flex" asChild>
+                <Link to="/login">Entrar</Link>
+              </Button>
+            )}
 
             {/* Mobile Menu */}
             <Sheet>
@@ -119,6 +149,25 @@ const Navbar = () => {
                   >
                     Sobre
                   </Link>
+                  <div className="pt-4 border-t">
+                    {user ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Conectado como {user.email}</p>
+                        <div className="flex gap-2">
+                          <Button asChild className="flex-1" size="sm">
+                            <Link to="/account">Minha conta</Link>
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex-1" onClick={() => signOut()}>
+                            Sair
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button asChild className="w-full">
+                        <Link to="/login">Entrar</Link>
+                      </Button>
+                    )}
+                  </div>
                   <div className="pt-4 border-t">
                     <Input type="search" placeholder="Buscar produtos..." />
                   </div>
