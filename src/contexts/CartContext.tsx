@@ -37,6 +37,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [hasHydratedRemote, setHasHydratedRemote] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -130,76 +131,91 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!isReady || !sessionId) return;
 
+    let isCancelled = false;
+    setHasHydratedRemote(false);
+
     const loadRemoteCart = async () => {
       const identifierColumn = customerId ? "customer_id" : "session_id";
       const identifierValue = customerId ?? sessionId;
 
-      const { data, error } = await supabase
-        .from("carts")
-        .select("id, cart_items(*)")
-        .eq(identifierColumn, identifierValue)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from("carts")
+          .select("id, cart_items(*)")
+          .eq(identifierColumn, identifierValue)
+          .maybeSingle();
 
-      if (error) {
-        if (error.code !== "PGRST116") {
-          console.error("Error loading remote cart", error);
+        if (error) {
+          if (error.code !== "PGRST116") {
+            console.error("Error loading remote cart", error);
+          }
+          return;
         }
-        return;
-      }
 
-      if (!data) return;
+        if (!data) return;
 
-      setCartId(data.id);
+        if (!isCancelled) {
+          setCartId(data.id);
+        }
 
-      if (data.cart_items) {
-        setItems((current) => {
-          const map = new Map<string, CartItem>();
+        if (data.cart_items && !isCancelled) {
+          setItems((current) => {
+            const map = new Map<string, CartItem>();
 
-          data.cart_items.forEach((item) => {
-            let size = "Único";
-            let color = "Padrão";
+            data.cart_items.forEach((item) => {
+              let size = "Único";
+              let color = "Padrão";
 
-            if (item.sku_snapshot) {
-              try {
-                const parsed = JSON.parse(item.sku_snapshot) as { size?: string; color?: string };
-                if (parsed.size) size = parsed.size;
-                if (parsed.color) color = parsed.color;
-              } catch (error) {
-                console.error("Failed to parse sku snapshot", error);
+              if (item.sku_snapshot) {
+                try {
+                  const parsed = JSON.parse(item.sku_snapshot) as { size?: string; color?: string };
+                  if (parsed.size) size = parsed.size;
+                  if (parsed.color) color = parsed.color;
+                } catch (error) {
+                  console.error("Failed to parse sku snapshot", error);
+                }
               }
-            }
 
-            const key = `${item.product_id}-${size}-${color}`;
-            map.set(key, {
-              id: item.product_id,
-              name: item.name_snapshot,
-              price: item.unit_price_cents / 100,
-              image: item.image_url ?? "/icon-192.png",
-              category: "Carrinho",
-              description: item.name_snapshot,
-              sizes: [],
-              colors: [],
-              rating: 0,
-              reviews: 0,
-              quantity: item.qty,
-              selectedSize: size,
-              selectedColor: color,
+              const key = `${item.product_id}-${size}-${color}`;
+              map.set(key, {
+                id: item.product_id,
+                name: item.name_snapshot,
+                price: item.unit_price_cents / 100,
+                image: item.image_url ?? "/icon-192.png",
+                category: "Carrinho",
+                description: item.name_snapshot,
+                sizes: [],
+                colors: [],
+                rating: 0,
+                reviews: 0,
+                quantity: item.qty,
+                selectedSize: size,
+                selectedColor: color,
+              });
             });
-          });
 
-          current.forEach((item) => {
-            const key = `${item.id}-${item.selectedSize}-${item.selectedColor}`;
-            if (!map.has(key)) {
-              map.set(key, item);
-            }
-          });
+            current.forEach((item) => {
+              const key = `${item.id}-${item.selectedSize}-${item.selectedColor}`;
+              if (!map.has(key)) {
+                map.set(key, item);
+              }
+            });
 
-          return Array.from(map.values());
-        });
+            return Array.from(map.values());
+          });
+        }
+      } finally {
+        if (!isCancelled) {
+          setHasHydratedRemote(true);
+        }
       }
     };
 
     loadRemoteCart();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [customerId, isReady, sessionId]);
 
   useEffect(() => {
@@ -279,9 +295,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [cartId, customerId, sessionId]);
 
   useEffect(() => {
-    if (!isReady || !sessionId) return;
+    if (!isReady || !sessionId || !hasHydratedRemote) return;
     syncCartToSupabase(items);
-  }, [items, sessionId, customerId, isReady, syncCartToSupabase]);
+  }, [items, sessionId, customerId, isReady, hasHydratedRemote, syncCartToSupabase]);
 
   const addItem = (product: Product, size: string, color: string, quantity = 1) => {
     setItems((prev) => {

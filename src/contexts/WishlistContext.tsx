@@ -20,6 +20,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [wishlistId, setWishlistId] = useState<string | null>(null);
   const [localReady, setLocalReady] = useState(false);
+  const [hasHydratedRemote, setHasHydratedRemote] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -97,43 +98,62 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (!customerId) return;
+    if (!customerId) {
+      setHasHydratedRemote(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setHasHydratedRemote(false);
 
     const loadRemoteWishlist = async () => {
-      const { data, error } = await supabase
-        .from("wishlists")
-        .select("id, wishlist_items(product_id)")
-        .eq("customer_id", customerId)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from("wishlists")
+          .select("id, wishlist_items(product_id)")
+          .eq("customer_id", customerId)
+          .maybeSingle();
 
-      if (error) {
-        if (error.code !== "PGRST116") {
-          console.error("Error loading wishlist", error);
+        if (error) {
+          if (error.code !== "PGRST116") {
+            console.error("Error loading wishlist", error);
+          }
+          return;
         }
-        return;
-      }
 
-      if (!data) return;
-      setWishlistId(data.id);
+        if (!data) return;
 
-      if (data.wishlist_items) {
-        setItems((current) => {
-          const map = new Map<string, Product>();
-          data.wishlist_items.forEach((item) => {
-            const found = products.find((product) => product.id === item.product_id);
-            if (found) {
-              map.set(found.id, found);
-            }
+        if (!isCancelled) {
+          setWishlistId(data.id);
+        }
+
+        if (data.wishlist_items && !isCancelled) {
+          setItems((current) => {
+            const map = new Map<string, Product>();
+            data.wishlist_items.forEach((item) => {
+              const found = products.find((product) => product.id === item.product_id);
+              if (found) {
+                map.set(found.id, found);
+              }
+            });
+            current.forEach((product) => {
+              map.set(product.id, product);
+            });
+            return Array.from(map.values());
           });
-          current.forEach((product) => {
-            map.set(product.id, product);
-          });
-          return Array.from(map.values());
-        });
+        }
+      } finally {
+        if (!isCancelled) {
+          setHasHydratedRemote(true);
+        }
       }
     };
 
     loadRemoteWishlist();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [customerId]);
 
   useEffect(() => {
@@ -179,9 +199,9 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   }, [customerId, wishlistId]);
 
   useEffect(() => {
-    if (!customerId || !localReady) return;
+    if (!customerId || !localReady || !hasHydratedRemote) return;
     syncWishlist(items);
-  }, [customerId, items, localReady, syncWishlist]);
+  }, [customerId, items, localReady, hasHydratedRemote, syncWishlist]);
 
   const addItem = (product: Product) => {
     setItems((prev) => {
