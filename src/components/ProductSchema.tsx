@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet";
-import { Product } from "@/data/products";
+import type { Product } from "@/types/product";
 
 interface ProductSchemaProps {
   product: Product;
@@ -10,8 +10,8 @@ const ProductSchema = ({ product }: ProductSchemaProps) => {
     "@context": "https://schema.org/",
     "@type": "Product",
     name: product.name,
-    image: product.image,
-    description: product.description,
+    image: product.image ?? "",
+    description: product.description ?? "",
     brand: {
       "@type": "Brand",
       name: "Meio Limão",
@@ -31,8 +31,8 @@ const ProductSchema = ({ product }: ProductSchemaProps) => {
     },
     aggregateRating: {
       "@type": "AggregateRating",
-      ratingValue: product.rating,
-      reviewCount: product.reviews,
+      ratingValue: product.rating ?? 0,
+      reviewCount: product.reviews ?? 0,
       bestRating: 5,
       worstRating: 1,
     },

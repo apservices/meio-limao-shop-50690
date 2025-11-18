@@ -4,37 +4,46 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "@/contexts/WishlistContext";
-import { Product } from "@/data/products";
+import type { Product } from "@/types/product";
 
 interface ProductCardProps {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  category: string;
-  isNew?: boolean;
+  product: Product;
   className?: string;
 }
 
-const ProductCard = ({
-  id,
-  name,
-  price,
-  originalPrice,
-  image,
-  category,
-  isNew,
-  className,
-}: ProductCardProps) => {
+const ProductCard = ({ product, className }: ProductCardProps) => {
+  const {
+    id,
+    name,
+    price,
+    originalPrice,
+    image,
+    category,
+    isNew,
+    description,
+    sizes,
+    colors,
+    rating,
+    reviews,
+  } = product;
   const { toggleItem, isInWishlist } = useWishlist();
   const discount = originalPrice
     ? Math.round(((originalPrice - price) / originalPrice) * 100)
     : 0;
-
-  const product: Product = {
-    id, name, price, originalPrice, image, category, isNew,
-    description: "", sizes: [], colors: [], rating: 5, reviews: 0
+  const coverImage = image ?? "/placeholder.svg?height=600&width=400";
+  const wishlistProduct: Product = {
+    id,
+    name,
+    price,
+    originalPrice,
+    image: coverImage,
+    category,
+    isNew,
+    description,
+    sizes,
+    colors,
+    rating,
+    reviews,
   };
 
   return (
@@ -47,7 +56,7 @@ const ProductCard = ({
       {/* Image Container */}
       <Link to={`/produto/${id}`} className="relative block aspect-[3/4] overflow-hidden bg-muted">
         <img
-          src={image}
+          src={coverImage}
           alt={name}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
@@ -70,7 +79,7 @@ const ProductCard = ({
             className="h-10 w-10 rounded-full shadow-lg"
             onClick={(e) => {
               e.preventDefault();
-              toggleItem(product);
+              toggleItem(wishlistProduct);
             }}
           >
             <Heart className={cn("h-4 w-4", isInWishlist(id) && "fill-primary")} />
@@ -89,7 +98,7 @@ const ProductCard = ({
       {/* Product Info */}
       <div className="p-4">
         <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-          {category}
+          {category ?? "Moda"}
         </p>
         <Link to={`/produto/${id}`}>
           <h3 className="font-medium text-foreground mb-2 hover:text-primary transition-colors line-clamp-2">
