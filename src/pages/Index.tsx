@@ -12,12 +12,12 @@ import InstagramFeed from "@/components/InstagramFeed";
 import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { products } from "@/data/products";
+import { mapMockProductToStoreProduct, mockProducts } from "@/data/products";
 import { ArrowRight } from "lucide-react";
 
 const Index = () => {
-  const newArrivals = products.filter(p => p.isNew).slice(0, 4);
-  const bestSellers = products.slice(0, 4);
+  const newArrivals = mockProducts.filter(p => p.isNew).slice(0, 4).map(mapMockProductToStoreProduct);
+  const bestSellers = mockProducts.slice(0, 4).map(mapMockProductToStoreProduct);
 
   return (
     <div className="min-h-screen">
@@ -46,9 +46,9 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {newArrivals.map((product) => (
-              <ProductCard key={product.id} {...product} />
-            ))}
+              {newArrivals.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
           </div>
         </section>
 
@@ -79,9 +79,9 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {bestSellers.map((product) => (
-              <ProductCard key={product.id} {...product} />
-            ))}
+              {bestSellers.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
           </div>
         </section>
 
