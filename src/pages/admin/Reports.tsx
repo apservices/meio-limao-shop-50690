@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { DollarSign, ShoppingCart, Users, TrendingUp, Package } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import {
@@ -15,6 +16,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast } from "sonner";
 
 interface Stats {
   totalRevenue: number;
@@ -30,6 +33,22 @@ interface SalesData {
   orders: number;
 }
 
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  created_at: string | null;
+  source?: string | null;
+}
+
+interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  subscribed_at: string | null;
+  source?: string | null;
+}
+
 const Reports = () => {
   const [stats, setStats] = useState<Stats>({
     totalRevenue: 0,
@@ -40,6 +59,10 @@ const Reports = () => {
   });
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
+  const [exportingContacts, setExportingContacts] = useState(false);
+  const [exportingNewsletter, setExportingNewsletter] = useState(false);
 
   useEffect(() => {
     loadReports();
@@ -48,25 +71,51 @@ const Reports = () => {
   const loadReports = async () => {
     setLoading(true);
 
-    // Get orders
-    const { data: orders } = await supabase
-      .from("orders")
-      .select("total_cents, created_at")
-      .eq("payment_status", "paid");
+    const [
+      ordersResult,
+      customersResult,
+      productsResult,
+      contactResult,
+      newsletterResult,
+    ] = await Promise.all([
+      supabase
+        .from("orders")
+        .select("total_cents, created_at")
+        .eq("payment_status", "paid"),
+      supabase.from("customers").select("*", { count: "exact", head: true }),
+      supabase.from("products").select("*", { count: "exact", head: true }),
+      supabase
+        .from("contact_messages")
+        .select("id, name, email, subject, created_at, source")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("newsletter_subscribers")
+        .select("id, email, subscribed_at, source")
+        .order("subscribed_at", { ascending: false })
+        .limit(10),
+    ]);
 
-    // Get customers
-    const { count: customersCount } = await supabase
-      .from("customers")
-      .select("*", { count: "exact", head: true });
+    if (ordersResult.error || customersResult.error || productsResult.error || contactResult.error || newsletterResult.error) {
+      console.error("Erro ao carregar relatórios", {
+        orders: ordersResult.error,
+        customers: customersResult.error,
+        products: productsResult.error,
+        contacts: contactResult.error,
+        newsletter: newsletterResult.error,
+      });
+      toast.error("Não foi possível carregar todos os dados. Tente novamente mais tarde.");
+    }
 
-    // Get products
-    const { count: productsCount } = await supabase
-      .from("products")
-      .select("*", { count: "exact", head: true });
+    const orders = ordersResult.data || [];
+    const customersCount = customersResult.count || 0;
+    const productsCount = productsResult.count || 0;
+    const contactData = contactResult.data || [];
+    const newsletterData = newsletterResult.data || [];
 
     // Calculate stats
-    const totalRevenue = orders?.reduce((sum, order) => sum + order.total_cents, 0) || 0;
-    const totalOrders = orders?.length || 0;
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.total_cents || 0), 0) || 0;
+    const totalOrders = orders.length || 0;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     setStats({
@@ -100,7 +149,100 @@ const Reports = () => {
       setSalesData(salesByDay);
     }
 
+    setContactMessages(contactData);
+    setNewsletterSubscribers(newsletterData);
+
     setLoading(false);
+  };
+
+  const formatDateTime = (date: string | null) => {
+    if (!date) return "-";
+    return new Date(date).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const exportToCsv = (rows: Record<string, string>[], filename: string) => {
+    if (!rows.length) {
+      toast.info("Nenhum registro disponível para exportação.");
+      return;
+    }
+
+    const headers = Object.keys(rows[0]);
+    const csv = [
+      headers.join(","),
+      ...rows.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header] ?? "";
+            return `"${value.replace(/"/g, '""')}"`;
+          })
+          .join(","),
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportContactMessages = async () => {
+    setExportingContacts(true);
+    try {
+      const { data } = await supabase
+        .from("contact_messages")
+        .select("name, email, phone, subject, message, source, created_at")
+        .order("created_at", { ascending: false });
+
+      const rows = (data || []).map((item) => ({
+        Nome: item.name,
+        Email: item.email,
+        Telefone: item.phone || "-",
+        Assunto: item.subject,
+        Mensagem: item.message,
+        Origem: item.source || "-",
+        "Recebido em": formatDateTime(item.created_at),
+      }));
+
+      exportToCsv(rows, "contact-messages.csv");
+    } catch (error) {
+      console.error(error);
+      toast.error("Não foi possível exportar as mensagens de contato.");
+    } finally {
+      setExportingContacts(false);
+    }
+  };
+
+  const handleExportNewsletter = async () => {
+    setExportingNewsletter(true);
+    try {
+      const { data } = await supabase
+        .from("newsletter_subscribers")
+        .select("email, name, source, subscribed_at")
+        .order("subscribed_at", { ascending: false });
+
+      const rows = (data || []).map((item) => ({
+        Email: item.email,
+        Nome: item.name || "-",
+        Origem: item.source || "-",
+        "Inscrito em": formatDateTime(item.subscribed_at),
+      }));
+
+      exportToCsv(rows, "newsletter-subscribers.csv");
+    } catch (error) {
+      console.error(error);
+      toast.error("Não foi possível exportar os assinantes.");
+    } finally {
+      setExportingNewsletter(false);
+    }
   };
 
   return (
@@ -221,6 +363,99 @@ const Reports = () => {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-start justify-between">
+                  <div>
+                    <CardTitle>Mensagens de Contato</CardTitle>
+                    <p className="text-sm text-muted-foreground">Últimos envios recebidos no site</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportContactMessages}
+                    disabled={exportingContacts}
+                  >
+                    {exportingContacts ? "Exportando..." : "Exportar CSV"}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {contactMessages.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center">
+                      Nenhuma mensagem recebida ainda.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>E-mail</TableHead>
+                          <TableHead>Assunto</TableHead>
+                          <TableHead>Recebido</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {contactMessages.map((message) => (
+                          <TableRow key={message.id}>
+                            <TableCell>
+                              <div className="font-medium">{message.name}</div>
+                              <p className="text-xs text-muted-foreground">{message.source || "-"}</p>
+                            </TableCell>
+                            <TableCell>{message.email}</TableCell>
+                            <TableCell className="max-w-[180px] truncate">{message.subject}</TableCell>
+                            <TableCell>{formatDateTime(message.created_at)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-start justify-between">
+                  <div>
+                    <CardTitle>Assinantes da Newsletter</CardTitle>
+                    <p className="text-sm text-muted-foreground">Leads captados em tempo real</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportNewsletter}
+                    disabled={exportingNewsletter}
+                  >
+                    {exportingNewsletter ? "Exportando..." : "Exportar CSV"}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {newsletterSubscribers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center">
+                      Nenhuma inscrição registrada ainda.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>E-mail</TableHead>
+                          <TableHead>Origem</TableHead>
+                          <TableHead>Inscrito em</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {newsletterSubscribers.map((subscriber) => (
+                          <TableRow key={subscriber.id}>
+                            <TableCell>{subscriber.email}</TableCell>
+                            <TableCell>{subscriber.source || "-"}</TableCell>
+                            <TableCell>{formatDateTime(subscriber.subscribed_at)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </>
         )}
       </div>

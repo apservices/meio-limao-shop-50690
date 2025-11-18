@@ -334,6 +334,45 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_messages: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          message: string
+          metadata: Json | null
+          name: string
+          phone: string | null
+          source: string | null
+          status: string | null
+          subject: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          name: string
+          phone?: string | null
+          source?: string | null
+          status?: string | null
+          subject: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          name?: string
+          phone?: string | null
+          source?: string | null
+          status?: string | null
+          subject?: string
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           code: string
@@ -573,6 +612,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      newsletter_subscribers: {
+        Row: {
+          email: string
+          id: string
+          metadata: Json | null
+          name: string | null
+          source: string | null
+          subscribed_at: string | null
+        }
+        Insert: {
+          email: string
+          id?: string
+          metadata?: Json | null
+          name?: string | null
+          source?: string | null
+          subscribed_at?: string | null
+        }
+        Update: {
+          email?: string
+          id?: string
+          metadata?: Json | null
+          name?: string | null
+          source?: string | null
+          subscribed_at?: string | null
+        }
+        Relationships: []
       }
       orders: {
         Row: {

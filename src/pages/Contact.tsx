@@ -1,3 +1,4 @@
+import { useState, ChangeEvent } from "react";
 import { Helmet } from "react-helmet";
 import Navbar from "@/components/Navbar";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -7,13 +8,58 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Mail, Phone, MapPin, MessageCircle, Instagram } from "lucide-react";
+import { Mail, Phone, MapPin, MessageCircle, Instagram, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Contact = () => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    subject: "",
+    message: "",
+  });
+  const [formStatus, setFormStatus] = useState<"idle" | "success" | "error">("idle");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const handleChange = (field: keyof typeof formData) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Mensagem enviada! Responderemos em breve.");
+    setIsSubmitting(true);
+    setFormStatus("idle");
+    setStatusMessage(null);
+
+    try {
+      const { error } = await supabase.functions.invoke("submit-contact", {
+        body: {
+          ...formData,
+          source: "contact_page",
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setFormStatus("success");
+      setStatusMessage("Mensagem enviada! Responderemos em breve.");
+      toast.success("Mensagem enviada! Responderemos em breve.");
+      setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+    } catch (error) {
+      console.error(error);
+      const message =
+        error instanceof Error ? error.message : "Não conseguimos enviar sua mensagem. Tente novamente.";
+      setFormStatus("error");
+      setStatusMessage(message);
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -54,6 +100,8 @@ const Contact = () => {
                       placeholder="Seu nome"
                       required
                       className="mt-1.5"
+                      value={formData.name}
+                      onChange={handleChange("name")}
                     />
                   </div>
                   <div>
@@ -64,6 +112,8 @@ const Contact = () => {
                       placeholder="seu@email.com"
                       required
                       className="mt-1.5"
+                      value={formData.email}
+                      onChange={handleChange("email")}
                     />
                   </div>
                   <div>
@@ -73,6 +123,8 @@ const Contact = () => {
                       type="tel"
                       placeholder="(11) 99999-9999"
                       className="mt-1.5"
+                      value={formData.phone}
+                      onChange={handleChange("phone")}
                     />
                   </div>
                   <div>
@@ -82,6 +134,8 @@ const Contact = () => {
                       placeholder="Como podemos ajudar?"
                       required
                       className="mt-1.5"
+                      value={formData.subject}
+                      onChange={handleChange("subject")}
                     />
                   </div>
                   <div>
@@ -92,11 +146,23 @@ const Contact = () => {
                       rows={5}
                       required
                       className="mt-1.5"
+                      value={formData.message}
+                      onChange={handleChange("message")}
                     />
                   </div>
-                  <Button type="submit" size="lg" className="w-full">
-                    Enviar Mensagem
+                  <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isSubmitting ? "Enviando..." : "Enviar Mensagem"}
                   </Button>
+                  {statusMessage && (
+                    <p
+                      className={`text-sm text-center ${
+                        formStatus === "error" ? "text-destructive" : "text-emerald-600"
+                      }`}
+                    >
+                      {statusMessage}
+                    </p>
+                  )}
                 </form>
               </div>
 
