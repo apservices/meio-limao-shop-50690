@@ -106,15 +106,19 @@ const NewArrivals = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product) => (
-                <ProductCard 
+                <ProductCard
                   key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  price={product.price}
-                  originalPrice={product.original_price}
-                  image={product.image_url}
-                  category={product.category_id || "Moda"}
-                  isNew={product.is_new}
+                  product={{
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    originalPrice: product.original_price,
+                    image: product.image_url,
+                    category: product.category_id || "Moda",
+                    isNew: product.is_new,
+                    rating: product.rating,
+                    reviews: product.reviews_count,
+                  }}
                 />
               ))}
             </div>

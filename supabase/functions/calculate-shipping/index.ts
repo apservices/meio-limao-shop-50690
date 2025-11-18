@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,6 +23,23 @@ interface ShippingRequest {
     quantity: number;
   }>;
 }
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
+const logCheckoutEvent = async (action: string, diff: Record<string, unknown>) => {
+  if (!supabase) return;
+  try {
+    await supabase.from('audit_logs').insert({
+      action,
+      entity: 'checkout',
+      diff,
+    });
+  } catch (error) {
+    console.error('Failed to log checkout event', error);
+  }
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -103,16 +121,29 @@ serve(async (req) => {
       error: option.error || null,
     })).filter((option: any) => !option.error);
 
+    await logCheckoutEvent('shipping_options_returned', {
+      cep,
+      option_count: options.length,
+      providers: options.map((option: ShippingOption) => ({
+        id: option.id,
+        name: option.name,
+        company: option.company?.name,
+      })),
+    });
+
     return new Response(
       JSON.stringify({ options }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
+        status: 200
       }
     );
 
   } catch (error) {
     console.error('Error calculating shipping:', error);
+    await logCheckoutEvent('shipping_calculation_failed', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ 
@@ -126,3 +157,11 @@ serve(async (req) => {
     );
   }
 });
+
+type ShippingOption = {
+  id: string;
+  name: string;
+  company?: {
+    name: string;
+  };
+};
