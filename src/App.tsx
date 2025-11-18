@@ -10,6 +10,7 @@ import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
+import { CheckoutFailurePage, CheckoutPendingPage, CheckoutSuccessPage } from "./pages/CheckoutStatusPage";
 import Account from "./pages/Account";
 import SizeGuide from "./pages/SizeGuide";
 import ExchangePolicy from "./pages/ExchangePolicy";
@@ -47,6 +48,9 @@ const App = () => (
             <Route path="/produto/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+            <Route path="/checkout/pending" element={<CheckoutPendingPage />} />
+            <Route path="/checkout/failure" element={<CheckoutFailurePage />} />
             <Route path="/new-arrivals" element={<NewArrivals />} />
             <Route path="/novidades" element={<NewArrivals />} />
             <Route path="/looks" element={<Looks />} />
