@@ -189,10 +189,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
           current.forEach((item) => {
             const key = `${item.id}-${item.selectedSize}-${item.selectedColor}`;
-            if (map.has(key)) {
-              const merged = map.get(key)!;
-              map.set(key, { ...merged, quantity: merged.quantity + item.quantity });
-            } else {
+            if (!map.has(key)) {
               map.set(key, item);
             }
           });
