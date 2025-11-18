@@ -12,6 +12,8 @@ const generateSessionId = () => {
   }
   return Math.random().toString(36).slice(2);
 };
+import { createContext, useContext, useState, ReactNode } from "react";
+import type { Product } from "@/types/product";
 
 interface CartItem extends Product {
   quantity: number;

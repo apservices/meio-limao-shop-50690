@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -14,21 +14,49 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { products } from "@/data/products";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { Star, Heart, ShoppingBag, Truck, RefreshCw, MessageCircle, Package } from "lucide-react";
 import { toast } from "sonner";
+import { useProductQuery } from "@/hooks/useProductsQuery";
+import { getPrimaryImageUrl, toProduct } from "@/types/product";
 
 const ProductDetail = () => {
   const { id } = useParams();
-  const product = products.find(p => p.id === id);
+  const { data, isLoading, isError } = useProductQuery(id);
+  const productRecord = data?.product;
+  const product = useMemo(() => (productRecord ? toProduct(productRecord) : undefined), [productRecord]);
+  const relatedProducts = useMemo(
+    () => (data?.related ?? []).map(toProduct),
+    [data?.related]
+  );
+  const reviews = data?.reviews ?? [];
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [selectedColor, setSelectedColor] = useState<string>("");
   const { addItem } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
 
-  if (!product) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="container mx-auto px-4 py-16">
+          <div className="grid md:grid-cols-2 gap-8">
+            <Skeleton className="w-full h-[500px] rounded-3xl" />
+            <div className="space-y-4">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-12 w-3/4" />
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !product || !productRecord) {
     return (
       <div className="min-h-screen">
         <Navbar />
@@ -42,45 +70,21 @@ const ProductDetail = () => {
     );
   }
 
-  const relatedProducts = products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
-
-  const mockReviews = [
-    {
-      id: "1",
-      author: "Julia Santos",
-      avatar: "https://i.pravatar.cc/150?img=1",
-      rating: 5,
-      date: "15/01/2025",
-      comment: "Amei! O tecido é super leve e o caimento ficou perfeito. A cor é ainda mais linda ao vivo!",
-      images: [product.image],
-      verified: true,
-    },
-    {
-      id: "2",
-      author: "Mariana Costa",
-      avatar: "https://i.pravatar.cc/150?img=5",
-      rating: 5,
-      date: "10/01/2025",
-      comment: "Qualidade impecável! Super confortável e versátil. Já comprei outras peças da marca.",
-      verified: true,
-    },
-    {
-      id: "3",
-      author: "Beatriz Oliveira",
-      avatar: "https://i.pravatar.cc/150?img=9",
-      rating: 4,
-      date: "05/01/2025",
-      comment: "Produto muito bom, porém achei o tamanho um pouco maior. Recomendo conferir a tabela de medidas.",
-      verified: true,
-    },
-  ];
+  const averageRating = product.rating ??
+    (reviews.length
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+      : 0);
+  const totalReviews = product.reviews ?? reviews.length;
+  const availableSizes = product.sizes ?? [];
+  const availableColors = product.colors ?? [];
+  const primaryImage = product.image ?? getPrimaryImageUrl(productRecord) ?? "/placeholder.svg?height=600&width=400";
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
+    if (availableSizes.length > 0 && !selectedSize) {
       toast.error("Por favor, selecione um tamanho");
       return;
     }
-    if (!selectedColor) {
+    if (availableColors.length > 0 && !selectedColor) {
       toast.error("Por favor, selecione uma cor");
       return;
     }
@@ -107,7 +111,7 @@ const ProductDetail = () => {
           <Breadcrumbs
             items={[
               { label: "Loja", path: "/shop" },
-              { label: product.category, path: `/shop?category=${product.category}` },
+              { label: product.category ?? "Moda", path: `/shop?category=${product.category ?? ""}` },
               { label: product.name, path: `/produto/${product.id}` },
             ]}
           />
@@ -116,7 +120,7 @@ const ProductDetail = () => {
           <div className="grid md:grid-cols-2 gap-8 lg:gap-12 mb-16">
             {/* Product Image */}
             <div className="space-y-4">
-              <ProductImageZoom src={product.image} alt={product.name} />
+              <ProductImageZoom src={primaryImage} alt={product.name} />
             </div>
 
             {/* Product Info */}
@@ -134,7 +138,7 @@ const ProductDetail = () => {
                       <Star
                         key={i}
                         className={`h-4 w-4 ${
-                          i < Math.floor(product.rating)
+                          i < Math.floor(averageRating)
                             ? "fill-primary text-primary"
                             : "text-muted"
                         }`}
@@ -142,7 +146,7 @@ const ProductDetail = () => {
                     ))}
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {product.rating} ({product.reviews} avaliações)
+                    {averageRating.toFixed(1)} ({totalReviews} avaliações)
                   </span>
                 </div>
 
@@ -164,51 +168,55 @@ const ProductDetail = () => {
 
               {/* Description */}
               <p className="text-foreground leading-relaxed">
-                {product.description}
+                {product.description ?? "Descrição indisponível no momento."}
               </p>
 
               {/* Size Selection */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Label className="text-sm font-semibold">Tamanho</Label>
-                  <SizeGuide />
+              {availableSizes.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-sm font-semibold">Tamanho</Label>
+                    <SizeGuide />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => setSelectedSize(size)}
+                        className={`h-12 w-12 rounded-lg border-2 font-medium transition-all ${
+                          selectedSize === size
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border hover:border-primary"
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {product.sizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`h-12 w-12 rounded-lg border-2 font-medium transition-all ${
-                        selectedSize === size
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border hover:border-primary"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
 
               {/* Color Selection */}
-              <div>
-                <Label className="text-sm font-semibold mb-3 block">Cor</Label>
-                <div className="flex flex-wrap gap-2">
-                  {product.colors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
-                        selectedColor === color
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border hover:border-primary"
-                      }`}
-                    >
-                      {color}
-                    </button>
-                  ))}
+              {availableColors.length > 0 && (
+                <div>
+                  <Label className="text-sm font-semibold mb-3 block">Cor</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {availableColors.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setSelectedColor(color)}
+                        className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
+                          selectedColor === color
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border hover:border-primary"
+                        }`}
+                      >
+                        {color}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Actions */}
               <div className="space-y-3">
@@ -265,13 +273,15 @@ const ProductDetail = () => {
             <Tabs defaultValue="details" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-8">
                 <TabsTrigger value="details">Detalhes do Produto</TabsTrigger>
-                <TabsTrigger value="reviews">Avaliações ({product.reviews})</TabsTrigger>
+                <TabsTrigger value="reviews">Avaliações ({totalReviews})</TabsTrigger>
               </TabsList>
               
               <TabsContent value="details" className="bg-card rounded-2xl p-6 md:p-8 shadow-sm border">
                 <div className="prose prose-sm max-w-none">
                   <h3 className="text-lg font-serif font-semibold mb-4">Sobre o Produto</h3>
-                  <p className="text-muted-foreground mb-4">{product.description}</p>
+                  <p className="text-muted-foreground mb-4">
+                    {product.description ?? "Descrição indisponível no momento."}
+                  </p>
                   
                   <h4 className="font-semibold mb-2">Composição</h4>
                   <p className="text-muted-foreground mb-4">100% Algodão natural</p>
@@ -291,9 +301,9 @@ const ProductDetail = () => {
               
               <TabsContent value="reviews" className="bg-card rounded-2xl p-6 md:p-8 shadow-sm border">
                 <ReviewsSection
-                  reviews={mockReviews}
-                  averageRating={product.rating}
-                  totalReviews={product.reviews}
+                  reviews={reviews}
+                  averageRating={averageRating}
+                  totalReviews={totalReviews}
                 />
               </TabsContent>
             </Tabs>
@@ -305,7 +315,7 @@ const ProductDetail = () => {
               <h2 className="text-2xl md:text-3xl font-bold mb-6">Você também pode gostar</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {relatedProducts.map((product) => (
-                  <ProductCard key={product.id} {...product} />
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
             </section>

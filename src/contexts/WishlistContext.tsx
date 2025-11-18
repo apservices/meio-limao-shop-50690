@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 const WISHLIST_STORAGE_KEY = "meio-limao-wishlist";
+import { createContext, useContext, useState, ReactNode } from "react";
+import type { Product } from "@/types/product";
 
 interface WishlistContextType {
   items: Product[];

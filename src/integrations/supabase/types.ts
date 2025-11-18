@@ -589,6 +589,8 @@ export type Database = {
           payment_status: string | null
           shipment_status: string | null
           shipping_cents: number | null
+          shipping_option_id: string | null
+          shipping_option_label: string | null
           status: string
           subtotal_cents: number | null
           total: number
@@ -610,6 +612,8 @@ export type Database = {
           payment_status?: string | null
           shipment_status?: string | null
           shipping_cents?: number | null
+          shipping_option_id?: string | null
+          shipping_option_label?: string | null
           status?: string
           subtotal_cents?: number | null
           total: number
@@ -631,6 +635,8 @@ export type Database = {
           payment_status?: string | null
           shipment_status?: string | null
           shipping_cents?: number | null
+          shipping_option_id?: string | null
+          shipping_option_label?: string | null
           status?: string
           subtotal_cents?: number | null
           total?: number
