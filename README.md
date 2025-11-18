@@ -71,3 +71,27 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Checkout configuration & required secrets
+
+The checkout experience depends on a few edge functions (shipping quotes, payment creation and webhooks). Configure the following environment secrets before deploying:
+
+| Secret | Where it is used | Description |
+| --- | --- | --- |
+| `MELHOR_ENVIO_TOKEN` | `calculate-shipping` edge function | Personal access token for the Melhor Envio API so we can fetch real shipping options. |
+| `MERCADO_PAGO_ACCESS_TOKEN` | `create-mercado-pago-payment` + webhook | Access token for Mercado Pago to create checkout preferences and pull payment status. |
+| `MERCADO_PAGO_WEBHOOK_SECRET` | `create-mercado-pago-payment` + webhook | Shared secret appended to the webhook URL; requests must include `?secret=...` or they will be rejected. |
+| `PUBLIC_SITE_URL` | `create-mercado-pago-payment` | The public storefront URL used to build the `back_urls` (e.g. `https://meiolimao.com.br`). |
+| `SUPABASE_SERVICE_ROLE_KEY` | All edge functions | Needed so the functions can create orders, payments and audit logs bypassing RLS. |
+
+Set them with the Supabase CLI:
+
+```sh
+supabase secrets set \
+  MELHOR_ENVIO_TOKEN="..." \
+  MERCADO_PAGO_ACCESS_TOKEN="..." \
+  MERCADO_PAGO_WEBHOOK_SECRET="super-secret" \
+  PUBLIC_SITE_URL="https://meiolimao.com.br"
+```
+
+The `create-mercado-pago-payment` function automatically appends `?secret=<MERCADO_PAGO_WEBHOOK_SECRET>` to the webhook URL, so use the same secret when registering the webhook inside the Mercado Pago dashboard.
