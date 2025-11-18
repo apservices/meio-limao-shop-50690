@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,13 @@ import { checkoutSchema } from "@/lib/validations";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [cep, setCep] = useState("");
   const [shippingCost, setShippingCost] = useState(15.90);
@@ -177,7 +179,23 @@ const Checkout = () => {
   return (
     <div className="min-h-screen bg-accent/5">
       <Navbar />
-      
+      <div className="border-b bg-background/80">
+        <div className="container mx-auto px-4 py-3 text-sm text-muted-foreground flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          {user ? (
+            <span>
+              Finalizando compra como <span className="font-medium text-foreground">{user.email}</span>
+            </span>
+          ) : (
+            <span>
+              Já tem conta? <Link to="/login" className="text-primary font-medium">Entre para salvar seus dados</Link>
+            </span>
+          )}
+          {!user && (
+            <span className="text-xs sm:text-sm">Você também pode continuar como convidado.</span>
+          )}
+        </div>
+      </div>
+
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-serif font-semibold mb-8">Finalizar Compra</h1>
         
