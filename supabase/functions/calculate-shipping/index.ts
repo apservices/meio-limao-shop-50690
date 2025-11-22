@@ -1,167 +1,125 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+﻿import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-interface ShippingRequest {
-  from: {
-    postal_code: string;
-  };
-  to: {
-    postal_code: string;
-  };
-  products: Array<{
-    id: string;
-    width: number;
-    height: number;
-    length: number;
-    weight: number;
-    insurance_value: number;
-    quantity: number;
-  }>;
-}
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
-
-const logCheckoutEvent = async (action: string, diff: Record<string, unknown>) => {
-  if (!supabase) return;
-  try {
-    await supabase.from('audit_logs').insert({
-      action,
-      entity: 'checkout',
-      diff,
-    });
-  } catch (error) {
-    console.error('Failed to log checkout event', error);
-  }
-};
+const MELHOR_ENVIO_TOKEN = Deno.env.get("MELHOR_ENVIO_TOKEN");
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  const jsonHeaders = {
+    "Content-Type": "application/json; charset=utf-8",
+  };
+
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Método não permitido" }),
+      { status: 405, headers: jsonHeaders },
+    );
   }
 
+  if (!MELHOR_ENVIO_TOKEN) {
+    return new Response(
+      JSON.stringify({ error: "MELHOR_ENVIO_TOKEN não configurado" }),
+      { status: 500, headers: jsonHeaders },
+    );
+  }
+
+  let body: any;
   try {
-    const { cep, items } = await req.json();
+    body = await req.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "JSON inválido" }),
+      { status: 400, headers: jsonHeaders },
+    );
+  }
 
-    console.log('Calculating shipping for CEP:', cep);
+  const { cep, weight } = body;
 
-    // Get Melhor Envio token from environment (production only)
-    const melhorEnvioToken = Deno.env.get('MELHOR_ENVIO_TOKEN');
-    if (!melhorEnvioToken) {
-      throw new Error('MELHOR_ENVIO_TOKEN not configured');
+  if (!cep || typeof cep !== "string" || cep.length !== 8) {
+    return new Response(
+      JSON.stringify({ error: "CEP inválido" }),
+      { status: 400, headers: jsonHeaders },
+    );
+  }
+
+  if (!weight || Number(weight) <= 0) {
+    return new Response(
+      JSON.stringify({ error: "Peso inválido" }),
+      { status: 400, headers: jsonHeaders },
+    );
+  }
+
+  // CEP de origem fixo (loja)
+  const fromPostalCode = "01001000";
+
+  const requestBody = {
+    from: { postal_code: fromPostalCode },
+    to: { postal_code: cep },
+    volumes: [
+      {
+        width: 16,
+        height: 2,
+        length: 23,
+        weight: Number(weight),
+        insurance_value: 50,
+      },
+    ],
+  };
+
+  try {
+    const meRes = await fetch(
+      "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + MELHOR_ENVIO_TOKEN,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "User-Agent": "MeioLimaoShop (frete@meiolimao.shop)",
+        },
+        body: JSON.stringify(requestBody),
+      },
+    );
+
+    const meData = await meRes.json();
+
+    if (!meRes.ok) {
+      console.error("Melhor Envio error:", meData);
+      return new Response(
+        JSON.stringify({
+          error: "Erro ao calcular frete no Melhor Envio",
+          details: meData,
+        }),
+        { status: 500, headers: jsonHeaders },
+      );
     }
 
-    // Preparar produtos para a API do Melhor Envio
-    const products = items.map((item: any) => ({
-      id: item.id || '1',
-      width: item.width || 11, // cm - mínimo da API
-      height: item.height || 2, // cm - mínimo da API
-      length: item.length || 16, // cm - mínimo da API
-      weight: item.weight || 0.3, // kg - mínimo da API
-      insurance_value: item.price || 50, // valor para seguro
-      quantity: item.quantity || 1,
-    }));
-
-    const shippingRequest: ShippingRequest = {
-      from: {
-        postal_code: '09860000', // CEP de origem da loja
-      },
-      to: {
-        postal_code: cep.replace(/\D/g, ''),
-      },
-      products,
-    };
-
-    console.log('Sending request to Melhor Envio:', JSON.stringify(shippingRequest, null, 2));
-
-    // Chamar API do Melhor Envio
-    const response = await fetch('https://melhorenvio.com.br/api/v2/me/shipment/calculate', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${melhorEnvioToken}`,
-        'User-Agent': 'Meio Limao Store (contato@meiolimao.com.br)',
-      },
-      body: JSON.stringify(shippingRequest),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Melhor Envio API error:', response.status, errorText);
-      throw new Error(`Melhor Envio API error: ${response.status}`);
+    if (!Array.isArray(meData) || meData.length === 0) {
+      return new Response(
+        JSON.stringify({ options: [] }),
+        { status: 200, headers: jsonHeaders },
+      );
     }
 
-    const data = await response.json();
-    console.log('Melhor Envio response:', JSON.stringify(data, null, 2));
-
-    // Formatar resposta para o frontend
-    const options = data.map((option: any) => ({
-      id: option.id,
-      name: option.name,
-      company: {
-        name: option.company.name,
-        picture: option.company.picture
-      },
-      price: parseFloat(option.price),
-      discount: option.discount || 0,
-      currency: option.currency,
-      delivery_time: option.delivery_time,
-      delivery_range: option.delivery_range,
-      custom_delivery_time: option.custom_delivery_time,
-      custom_delivery_range: option.custom_delivery_range,
-      packages: option.packages,
-      additional_services: option.additional_services,
-      error: option.error || null,
-    })).filter((option: any) => !option.error);
-
-    await logCheckoutEvent('shipping_options_returned', {
-      cep,
-      option_count: options.length,
-      providers: options.map((option: ShippingOption) => ({
-        id: option.id,
-        name: option.name,
-        company: option.company?.name,
-      })),
-    });
+    const options = meData
+      .filter((opt: any) => !opt.error)
+      .map((opt: any) => ({
+        id: opt.id,
+        name: opt.name,
+        price: Number(opt.price),
+        delivery_time: opt.delivery_time,
+        delivery_range: opt.delivery_range,
+        company: opt.company?.name ?? "",
+        raw: opt,
+      }));
 
     return new Response(
       JSON.stringify({ options }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
+      { status: 200, headers: jsonHeaders },
     );
-
   } catch (error) {
-    console.error('Error calculating shipping:', error);
-    await logCheckoutEvent('shipping_calculation_failed', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-    });
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error("Unexpected error in calculate-shipping:", error);
     return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        options: [] 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
+      JSON.stringify({ error: "Erro inesperado ao calcular frete" }),
+      { status: 500, headers: jsonHeaders },
     );
   }
 });
-
-type ShippingOption = {
-  id: string;
-  name: string;
-  company?: {
-    name: string;
-  };
-};
