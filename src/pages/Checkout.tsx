@@ -153,7 +153,12 @@ const Checkout = () => {
       });
 
       if (error) {
-        throw error;
+        throw new Error(error.message || 'Não foi possível calcular o frete');
+      }
+
+      if (data?.error) {
+        const details = Array.isArray(data.details) ? data.details.join('; ') : data.details;
+        throw new Error(typeof data.error === 'string' ? `${data.error}${details ? `: ${details}` : ''}` : 'Não foi possível calcular o frete');
       }
 
       const options = (data?.options || []) as ShippingOption[];
@@ -186,7 +191,11 @@ const Checkout = () => {
       setShippingOptions([]);
       setSelectedShippingOption(null);
       setShippingCost(0);
-      setShippingError("Não foi possível calcular o frete. Tente novamente em instantes.");
+      setShippingError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível calcular o frete. Tente novamente em instantes."
+      );
       await logCheckoutEvent('shipping_calculation_error', {
         cep: sanitized,
         message: error instanceof Error ? error.message : 'Unknown error',

@@ -14,10 +14,60 @@ const DEFAULT_VOLUME = {
   insurance_value: 50,
 };
 
+const sanitizeCep = (value?: string | null) => value?.replace(/\D/g, "") ?? "";
+
+const ORIGIN_POSTAL_CODE = (() => {
+  const fromEnv = sanitizeCep(Deno.env.get("MELHOR_ENVIO_ORIGIN_POSTAL_CODE"));
+  if (fromEnv && fromEnv.length === 8) return fromEnv;
+  return "01001000";
+})();
+
 const parsePositiveNumber = (value: unknown, fallback: number) => {
   const parsed = Number(value);
   if (Number.isFinite(parsed) && parsed > 0) return parsed;
   return fallback;
+};
+
+const sanitizeServiceIds = (value?: string | null) => {
+  if (!value) return [] as string[];
+
+  return value
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => /^(\d+)$/.test(id));
+};
+
+let cachedServiceIds: string[] | null = null;
+
+const fetchAvailableServiceIds = async () => {
+  if (cachedServiceIds && cachedServiceIds.length > 0) return cachedServiceIds;
+
+  try {
+    const res = await fetch(`${MELHOR_ENVIO_BASE_URL}/me/shipment/services`, {
+      headers: {
+        Authorization: "Bearer " + MELHOR_ENVIO_TOKEN,
+        Accept: "application/json",
+        "User-Agent": "MeioLimaoShop (frete@meiolimao.shop)",
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !Array.isArray(data)) {
+      console.error("Failed to fetch service ids", data);
+      return [] as string[];
+    }
+
+    cachedServiceIds = data
+      .map((service: any) => service?.id)
+      .filter((id) => typeof id === "string" || typeof id === "number")
+      .map((id) => String(id));
+
+    return cachedServiceIds ?? [];
+  } catch (error) {
+    console.error("Unexpected error while fetching service ids", error);
+    return [] as string[];
+  }
 };
 
 const formatDeliveryTime = (opt: any) => {
@@ -67,7 +117,9 @@ serve(async (req) => {
 
   const { cep, weight, items } = body;
 
-  if (!cep || typeof cep !== "string" || cep.length !== 8) {
+  const sanitizedCep = sanitizeCep(typeof cep === "string" ? cep : "");
+
+  if (!sanitizedCep || sanitizedCep.length !== 8) {
     return new Response(
       JSON.stringify({ error: "CEP inválido" }),
       { status: 400, headers: jsonHeaders },
@@ -97,15 +149,27 @@ serve(async (req) => {
     volumes.push({ ...DEFAULT_VOLUME, weight: parsePositiveNumber(weight, DEFAULT_VOLUME.weight) });
   }
 
-  const fromPostalCode = "01001000";
+  const fromPostalCode = ORIGIN_POSTAL_CODE;
 
   const requestBody = {
     from: { postal_code: fromPostalCode },
-    to: { postal_code: cep },
+    to: { postal_code: sanitizedCep },
     volumes,
   };
 
   try {
+    const envServiceIds = sanitizeServiceIds(Deno.env.get("MELHOR_ENVIO_SERVICE_IDS"));
+    const availableServiceIds = envServiceIds.length > 0
+      ? envServiceIds
+      : await fetchAvailableServiceIds();
+
+    const finalRequestBody = {
+      ...requestBody,
+      ...(availableServiceIds.length > 0
+        ? { services: availableServiceIds.join(",") }
+        : {}),
+    };
+
     const meRes = await fetch(
       `${MELHOR_ENVIO_BASE_URL}/me/shipment/calculate`,
       {
@@ -116,7 +180,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
           "User-Agent": "MeioLimaoShop (frete@meiolimao.shop)",
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(finalRequestBody),
       },
     );
 
@@ -128,20 +192,43 @@ serve(async (req) => {
         JSON.stringify({
           error: "Erro ao calcular frete no Melhor Envio",
           details: meData,
+          status: meRes.status,
         }),
-        { status: 500, headers: jsonHeaders },
+        { status: 200, headers: jsonHeaders },
       );
     }
 
     if (!Array.isArray(meData) || meData.length === 0) {
       return new Response(
-        JSON.stringify({ options: [] }),
+        JSON.stringify({
+          error: "Nenhuma opção retornada pelo Melhor Envio",
+          details: meData,
+          options: [],
+          status: meRes.status,
+        }),
         { status: 200, headers: jsonHeaders },
       );
     }
 
-    const options = meData
-      .filter((opt: any) => !opt.error)
+    const successfulOptions = meData.filter((opt: any) => !opt.error);
+
+    if (successfulOptions.length === 0) {
+      const errors = meData
+        .map((opt: any) => opt?.error ?? null)
+        .filter(Boolean);
+
+      return new Response(
+        JSON.stringify({
+          error: "Nenhuma opção disponível para o CEP informado.",
+          details: errors,
+          options: [],
+          status: meRes.status,
+        }),
+        { status: 200, headers: jsonHeaders },
+      );
+    }
+
+    const options = successfulOptions
       .map((opt: any) => {
         const formattedDelivery = formatDeliveryTime(opt);
         const deliveryDays = opt.delivery_time?.days
