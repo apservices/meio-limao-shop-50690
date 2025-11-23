@@ -63,6 +63,16 @@ const ShippingCalculator = () => {
       }
 
       if (data?.error) {
+        const details = Array.isArray(data.details)
+          ? data.details.find((d: any) => typeof d?.message === 'string')?.message
+          : typeof data.details === 'string'
+          ? data.details
+          : undefined;
+
+        throw new Error(
+          details || (typeof data.error === 'string'
+            ? data.error
+            : 'Não foi possível calcular o frete para este CEP')
         throw new Error(
           typeof data.error === 'string'
             ? data.error

@@ -138,8 +138,9 @@ serve(async (req) => {
         JSON.stringify({
           error: "Erro ao calcular frete no Melhor Envio",
           details: meData,
+          status: meRes.status,
         }),
-        { status: 500, headers: jsonHeaders },
+        { status: 200, headers: jsonHeaders },
       );
     }
 
@@ -149,8 +150,9 @@ serve(async (req) => {
           error: "Nenhuma opção retornada pelo Melhor Envio",
           details: meData,
           options: [],
+          status: meRes.status,
         }),
-        { status: 502, headers: jsonHeaders },
+        { status: 200, headers: jsonHeaders },
       );
     }
 
@@ -166,8 +168,9 @@ serve(async (req) => {
           error: "Nenhuma opção disponível para o CEP informado.",
           details: errors,
           options: [],
+          status: meRes.status,
         }),
-        { status: 422, headers: jsonHeaders },
+        { status: 200, headers: jsonHeaders },
       );
     }
 

@@ -1,6 +1,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -20,6 +21,9 @@ const SizeGuide = () => {
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Guia de Medidas</DialogTitle>
+          <DialogDescription className="sr-only">
+            Tabela de medidas e instruções para encontrar o tamanho ideal.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
