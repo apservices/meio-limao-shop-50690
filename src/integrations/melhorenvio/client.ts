@@ -5,10 +5,10 @@ const BASE_URL = import.meta.env.VITE_MELHOR_ENVIO_SANDBOX === "true"
 const TOKEN = import.meta.env.VITE_MELHOR_ENVIO_TOKEN;
 
 export async function melhorEnvioQuote(payload: any) {
-  const res = await fetch(\\/me/shipment/calculate\, {
+  const res = await fetch(`${BASE_URL}/me/shipment/calculate`, {
     method: "POST",
     headers: {
-      Authorization: \Bearer \\,
+      Authorization: `Bearer ${TOKEN}`,
       "Content-Type": "application/json",
       Accept: "application/json",
     },

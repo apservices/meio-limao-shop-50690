@@ -1,6 +1,40 @@
-﻿import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const MELHOR_ENVIO_TOKEN = Deno.env.get("MELHOR_ENVIO_TOKEN");
+const MELHOR_ENVIO_SANDBOX = Deno.env.get("MELHOR_ENVIO_SANDBOX") === "true";
+const MELHOR_ENVIO_BASE_URL = MELHOR_ENVIO_SANDBOX
+  ? "https://sandbox.melhorenvio.com.br/api/v2"
+  : "https://www.melhorenvio.com.br/api/v2";
+
+const DEFAULT_VOLUME = {
+  width: 16,
+  height: 2,
+  length: 23,
+  weight: 0.3,
+  insurance_value: 50,
+};
+
+const parsePositiveNumber = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  return fallback;
+};
+
+const formatDeliveryTime = (opt: any) => {
+  const minDays = opt.delivery_range?.min ?? opt.delivery_time?.min ?? opt.delivery_time?.days;
+  const maxDays = opt.delivery_range?.max ?? opt.delivery_time?.max ?? opt.delivery_time?.days;
+
+  if (minDays && maxDays && minDays !== maxDays) {
+    return `${minDays}-${maxDays} dias úteis`;
+  }
+
+  if (minDays || maxDays) {
+    const value = minDays ?? maxDays;
+    return `${value} dia(s) útil(eis)`;
+  }
+
+  return null;
+};
 
 serve(async (req) => {
   const jsonHeaders = {
@@ -31,7 +65,7 @@ serve(async (req) => {
     );
   }
 
-  const { cep, weight } = body;
+  const { cep, weight, items } = body;
 
   if (!cep || typeof cep !== "string" || cep.length !== 8) {
     return new Response(
@@ -40,33 +74,40 @@ serve(async (req) => {
     );
   }
 
-  if (!weight || Number(weight) <= 0) {
-    return new Response(
-      JSON.stringify({ error: "Peso inválido" }),
-      { status: 400, headers: jsonHeaders },
-    );
+  const volumes: any[] = [];
+
+  if (Array.isArray(items) && items.length > 0) {
+    items.forEach((item) => {
+      const quantity = parsePositiveNumber(item.quantity, 1);
+      const volume = {
+        width: parsePositiveNumber(item.width, DEFAULT_VOLUME.width),
+        height: parsePositiveNumber(item.height, DEFAULT_VOLUME.height),
+        length: parsePositiveNumber(item.length, DEFAULT_VOLUME.length),
+        weight: parsePositiveNumber(item.weight ?? weight, DEFAULT_VOLUME.weight),
+        insurance_value: parsePositiveNumber(item.price, DEFAULT_VOLUME.insurance_value),
+      };
+
+      for (let i = 0; i < quantity; i++) {
+        volumes.push(volume);
+      }
+    });
   }
 
-  // CEP de origem fixo (loja)
+  if (volumes.length === 0) {
+    volumes.push({ ...DEFAULT_VOLUME, weight: parsePositiveNumber(weight, DEFAULT_VOLUME.weight) });
+  }
+
   const fromPostalCode = "01001000";
 
   const requestBody = {
     from: { postal_code: fromPostalCode },
     to: { postal_code: cep },
-    volumes: [
-      {
-        width: 16,
-        height: 2,
-        length: 23,
-        weight: Number(weight),
-        insurance_value: 50,
-      },
-    ],
+    volumes,
   };
 
   try {
     const meRes = await fetch(
-      "https://www.melhorenvio.com.br/api/v2/me/shipment/calculate",
+      `${MELHOR_ENVIO_BASE_URL}/me/shipment/calculate`,
       {
         method: "POST",
         headers: {
@@ -101,15 +142,31 @@ serve(async (req) => {
 
     const options = meData
       .filter((opt: any) => !opt.error)
-      .map((opt: any) => ({
-        id: opt.id,
-        name: opt.name,
-        price: Number(opt.price),
-        delivery_time: opt.delivery_time,
-        delivery_range: opt.delivery_range,
-        company: opt.company?.name ?? "",
-        raw: opt,
-      }));
+      .map((opt: any) => {
+        const formattedDelivery = formatDeliveryTime(opt);
+        const deliveryDays = opt.delivery_time?.days
+          ?? opt.delivery_range?.max
+          ?? opt.delivery_range?.min
+          ?? undefined;
+
+        return {
+          id: opt.id ?? opt.service_id ?? `${opt.company?.id ?? ""}-${opt.name ?? ""}`,
+          name: opt.name ?? "Entrega",
+          price: Number(opt.price ?? opt.delivery_price ?? 0),
+          discount: opt.discount ? Number(opt.discount) : undefined,
+          delivery_time: {
+            days: deliveryDays ? Number(deliveryDays) : undefined,
+            formatted: formattedDelivery ?? undefined,
+          },
+          delivery_range: opt.delivery_range ?? undefined,
+          company: {
+            name: opt.company?.name ?? "",
+            picture: opt.company?.picture ?? opt.company?.logo ?? null,
+          },
+          custom_delivery_time: formattedDelivery ?? undefined,
+          raw: opt,
+        };
+      });
 
     return new Response(
       JSON.stringify({ options }),
