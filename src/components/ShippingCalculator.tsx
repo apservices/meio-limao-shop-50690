@@ -58,25 +58,37 @@ const ShippingCalculator = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || 'Falha ao calcular frete');
+      }
+
+      if (data?.error) {
+        const details = Array.isArray(data.details)
+          ? data.details.find((d: any) => typeof d?.message === 'string')?.message
+          : typeof data.details === 'string'
+          ? data.details
+          : undefined;
+
+        throw new Error(
+          details || (typeof data.error === 'string'
+            ? data.error
+            : 'Não foi possível calcular o frete para este CEP')
+        );
+      }
 
       if (data?.options && data.options.length > 0) {
         setResult(data.options as ShippingOption[]);
       } else {
-        toast({
-          title: "Nenhuma opção encontrada",
-          description: "Não foi possível calcular o frete para este CEP",
-          variant: "destructive",
-        });
-        setResult(null);
+        throw new Error('Nenhuma opção de frete encontrada para o CEP informado');
       }
     } catch (error) {
       console.error('Error calculating shipping:', error);
       toast({
         title: "Erro ao calcular frete",
-        description: "Tente novamente em alguns instantes",
+        description: error instanceof Error ? error.message : "Tente novamente em alguns instantes",
         variant: "destructive",
       });
+      setResult(null);
     } finally {
       setLoading(false);
     }

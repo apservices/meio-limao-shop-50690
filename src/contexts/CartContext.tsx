@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { Product } from "@/data/products";
-import { supabase } from "@/integrations/supabase/client";
+import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 const CART_STORAGE_KEY = "meio-limao-cart";
@@ -73,6 +73,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     let isMounted = true;
 
     const ensureCustomer = async (user: User | null) => {
+      if (!isSupabaseConfigured) return;
       if (!user) {
         if (isMounted) {
           setCustomerId(null);
@@ -114,13 +115,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (isMounted) setCustomerId(created.id);
     };
 
-    supabase.auth.getUser().then(({ data }) => ensureCustomer(data.user));
+    if (isSupabaseConfigured) {
+      supabase.auth.getUser().then(({ data }) => ensureCustomer(data.user));
+    }
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      ensureCustomer(session?.user ?? null);
-    });
+    const subscription = isSupabaseConfigured
+      ? supabase.auth.onAuthStateChange((_event, session) => {
+          ensureCustomer(session?.user ?? null);
+        }).data.subscription
+      : { unsubscribe: () => {} };
 
     return () => {
       isMounted = false;
@@ -129,7 +132,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (!isReady || !sessionId) return;
+    if (!isReady || !sessionId || !isSupabaseConfigured) return;
 
     let isCancelled = false;
     setHasHydratedRemote(false);
@@ -228,7 +231,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const syncCartToSupabase = useMemo(() => {
     return async (currentItems: CartItem[]) => {
-      if (!sessionId) return;
+      if (!sessionId || !isSupabaseConfigured) return;
+
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error("Failed to read Supabase session", sessionError);
+        return;
+      }
+
+      if (!sessionData.session) return;
 
       try {
         let effectiveCartId = cartId;
@@ -292,7 +304,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         console.error("Failed to sync cart with Supabase", error);
       }
     };
-  }, [cartId, customerId, sessionId]);
+  }, [cartId, customerId, sessionId, isSupabaseConfigured]);
 
   useEffect(() => {
     if (!isReady || !sessionId || !hasHydratedRemote) return;
