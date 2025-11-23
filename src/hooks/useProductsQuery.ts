@@ -90,8 +90,7 @@ const fetchProducts = async (): Promise<ProductsQueryResult> => {
         `
         *,
         categories:categories(*),
-        product_variants(*),
-        product_images(*)
+        product_variants(*)
       `
       )
       .eq("is_active", true)
@@ -130,8 +129,7 @@ const fetchProduct = async (productId: string): Promise<ProductQueryResult> => {
         `
         *,
         categories:categories(*),
-        product_variants(*),
-        product_images(*)
+        product_variants(*)
       `
       )
       .eq("id", productId)
@@ -160,8 +158,7 @@ const fetchProduct = async (productId: string): Promise<ProductQueryResult> => {
         `
         *,
         categories:categories(*),
-        product_variants(*),
-        product_images(*)
+        product_variants(*)
       `
       )
       .neq("id", productId)
