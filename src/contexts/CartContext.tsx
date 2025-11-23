@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { Product } from "@/data/products";
-import { supabase } from "@/integrations/supabase/client";
+import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 const CART_STORAGE_KEY = "meio-limao-cart";
@@ -228,7 +228,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const syncCartToSupabase = useMemo(() => {
     return async (currentItems: CartItem[]) => {
-      if (!sessionId) return;
+      if (!sessionId || !isSupabaseConfigured) return;
+
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error("Failed to read Supabase session", sessionError);
+        return;
+      }
+
+      if (!sessionData.session) return;
 
       try {
         let effectiveCartId = cartId;
