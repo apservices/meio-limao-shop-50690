@@ -28,6 +28,48 @@ const parsePositiveNumber = (value: unknown, fallback: number) => {
   return fallback;
 };
 
+const sanitizeServiceIds = (value?: string | null) => {
+  if (!value) return [] as string[];
+
+  return value
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => /^(\d+)$/.test(id));
+};
+
+let cachedServiceIds: string[] | null = null;
+
+const fetchAvailableServiceIds = async () => {
+  if (cachedServiceIds && cachedServiceIds.length > 0) return cachedServiceIds;
+
+  try {
+    const res = await fetch(`${MELHOR_ENVIO_BASE_URL}/me/shipment/services`, {
+      headers: {
+        Authorization: "Bearer " + MELHOR_ENVIO_TOKEN,
+        Accept: "application/json",
+        "User-Agent": "MeioLimaoShop (frete@meiolimao.shop)",
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !Array.isArray(data)) {
+      console.error("Failed to fetch service ids", data);
+      return [] as string[];
+    }
+
+    cachedServiceIds = data
+      .map((service: any) => service?.id)
+      .filter((id) => typeof id === "string" || typeof id === "number")
+      .map((id) => String(id));
+
+    return cachedServiceIds ?? [];
+  } catch (error) {
+    console.error("Unexpected error while fetching service ids", error);
+    return [] as string[];
+  }
+};
+
 const formatDeliveryTime = (opt: any) => {
   const minDays = opt.delivery_range?.min ?? opt.delivery_time?.min ?? opt.delivery_time?.days;
   const maxDays = opt.delivery_range?.max ?? opt.delivery_time?.max ?? opt.delivery_time?.days;
@@ -116,6 +158,18 @@ serve(async (req) => {
   };
 
   try {
+    const envServiceIds = sanitizeServiceIds(Deno.env.get("MELHOR_ENVIO_SERVICE_IDS"));
+    const availableServiceIds = envServiceIds.length > 0
+      ? envServiceIds
+      : await fetchAvailableServiceIds();
+
+    const finalRequestBody = {
+      ...requestBody,
+      ...(availableServiceIds.length > 0
+        ? { services: availableServiceIds.join(",") }
+        : {}),
+    };
+
     const meRes = await fetch(
       `${MELHOR_ENVIO_BASE_URL}/me/shipment/calculate`,
       {
@@ -126,7 +180,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
           "User-Agent": "MeioLimaoShop (frete@meiolimao.shop)",
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(finalRequestBody),
       },
     );
 
