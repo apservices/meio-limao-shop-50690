@@ -18,7 +18,7 @@ type ShippingOption = {
   name: string;
   company: {
     name: string;
-    picture?: string;
+    picture?: string | null;
   };
   price: number;
   discount?: number;
@@ -30,6 +30,7 @@ type ShippingOption = {
     min?: number;
     max?: number;
   };
+  custom_delivery_time?: string;
 };
 
 const formatCurrency = (value: number) =>
@@ -51,6 +52,14 @@ const logCheckoutEvent = async (
   } catch (error) {
     console.error('Failed to log checkout event', error);
   }
+};
+
+const formatDeliveryLabel = (option: ShippingOption) => {
+  if (option.delivery_time?.formatted) return option.delivery_time.formatted;
+  if (option.custom_delivery_time) return option.custom_delivery_time;
+  if (option.delivery_time?.days) return `Entrega em até ${option.delivery_time.days} dia(s)`;
+  if (option.delivery_range?.max) return `Entrega estimada em ${option.delivery_range.max} dia(s)`;
+  return null;
 };
 
 const Checkout = () => {
@@ -606,8 +615,8 @@ const Checkout = () => {
                               </div>
                               <div className="text-right">
                                 <p className="font-semibold">{formatCurrency(option.price)}</p>
-                                {option.delivery_time?.days && (
-                                  <p className="text-xs text-muted-foreground">Entrega em até {option.delivery_time.days} dia(s)</p>
+                                {formatDeliveryLabel(option) && (
+                                  <p className="text-xs text-muted-foreground">{formatDeliveryLabel(option)}</p>
                                 )}
                               </div>
                             </div>

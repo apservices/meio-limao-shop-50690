@@ -5,15 +5,31 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface ShippingOption {
+  id: string;
+  name: string;
+  price: number;
+  company?: { name: string; picture?: string | null };
+  delivery_time?: { days?: number; formatted?: string };
+  custom_delivery_time?: string;
+}
+
 const ShippingCalculator = () => {
   const [cep, setCep] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ShippingOption[] | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  const formatDeliveryLabel = (option: ShippingOption) => {
+    if (option.custom_delivery_time) return option.custom_delivery_time;
+    if (option.delivery_time?.formatted) return option.delivery_time.formatted;
+    if (option.delivery_time?.days) return `${option.delivery_time.days} dia(s) útil(eis)`;
+    return "Prazo indisponível";
+  };
+
   const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (cep.length !== 8) {
       toast({
         title: "CEP inválido",
@@ -26,14 +42,14 @@ const ShippingCalculator = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('calculate-shipping', {
-        body: { 
+        body: {
           cep,
           items: [
             {
-              id: '1',
-              width: 11,
+              id: 'sample',
+              width: 16,
               height: 2,
-              length: 16,
+              length: 23,
               weight: 0.3,
               price: 50,
               quantity: 1,
@@ -45,7 +61,7 @@ const ShippingCalculator = () => {
       if (error) throw error;
 
       if (data?.options && data.options.length > 0) {
-        setResult(data.options);
+        setResult(data.options as ShippingOption[]);
       } else {
         toast({
           title: "Nenhuma opção encontrada",
@@ -87,12 +103,12 @@ const ShippingCalculator = () => {
       </form>
       {result && result.length > 0 && (
         <div className="text-xs space-y-2 mt-3">
-          {result.map((option: any) => (
+          {result.map((option) => (
             <div key={option.id} className="flex justify-between items-center py-2 border-b last:border-b-0">
               <div>
-                <p className="font-medium text-foreground">{option.company.name} - {option.name}</p>
+                <p className="font-medium text-foreground">{option.company?.name} - {option.name}</p>
                 <p className="text-muted-foreground">
-                  {option.custom_delivery_time} dias úteis
+                  {formatDeliveryLabel(option)}
                 </p>
               </div>
               <p className="font-semibold text-foreground">
