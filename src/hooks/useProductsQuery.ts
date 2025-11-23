@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import type {
   CategoryRow,
   NormalizedReview,
@@ -83,6 +83,15 @@ const buildMockReviews = (product: ProductWithRelations): NormalizedReview[] => 
 ];
 
 const fetchProducts = async (): Promise<ProductsQueryResult> => {
+  if (!isSupabaseConfigured) {
+    const fallbackProducts = getMockProductsAsProductRecords();
+    return {
+      products: fallbackProducts,
+      categories: buildFallbackCategories(fallbackProducts),
+      isFallback: true,
+    };
+  }
+
   try {
     const { data, error } = await supabase
       .from("products")
@@ -122,6 +131,30 @@ const fetchProducts = async (): Promise<ProductsQueryResult> => {
 };
 
 const fetchProduct = async (productId: string): Promise<ProductQueryResult> => {
+  if (!isSupabaseConfigured) {
+    const fallbackProduct = getMockProductsAsProductRecords().find(
+      (product) => product.id === productId
+    );
+
+    if (!fallbackProduct) {
+      throw new Error("Produto não encontrado");
+    }
+
+    const related = getMockProductsAsProductRecords()
+      .filter(
+        (product) =>
+          product.category_id === fallbackProduct.category_id && product.id !== fallbackProduct.id
+      )
+      .slice(0, 4);
+
+    return {
+      product: fallbackProduct,
+      reviews: buildMockReviews(fallbackProduct),
+      related,
+      isFallback: true,
+    };
+  }
+
   try {
     const { data, error } = await supabase
       .from("products")

@@ -2,7 +2,13 @@ import { useState, useEffect } from "react";
 import { X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -61,6 +67,12 @@ const NewsletterPopup = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-md">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Assine a newsletter Meio Limão</DialogTitle>
+          <DialogDescription>
+            Cadastre seu e-mail para receber novidades e um cupom de boas-vindas.
+          </DialogDescription>
+        </DialogHeader>
         <button
           onClick={handleClose}
           className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 transition-opacity"
