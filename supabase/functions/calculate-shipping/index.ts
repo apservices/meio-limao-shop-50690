@@ -1,7 +1,12 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const MELHOR_ENVIO_TOKEN = Deno.env.get("MELHOR_ENVIO_TOKEN");
-const MELHOR_ENVIO_SANDBOX = Deno.env.get("MELHOR_ENVIO_SANDBOX") === "true";
+const MELHOR_ENVIO_SANDBOX =
+  (Deno.env.get("MELHOR_ENVIO_SANDBOX") || "")
+    .toString()
+    .trim()
+    .toLowerCase() === "true";
 const MELHOR_ENVIO_BASE_URL = MELHOR_ENVIO_SANDBOX
   ? "https://sandbox.melhorenvio.com.br/api/v2"
   : "https://www.melhorenvio.com.br/api/v2";
@@ -51,7 +56,7 @@ const fetchAvailableServiceIds = async () => {
       },
     });
 
-    const data = await res.json();
+    const data = await safeParseJson(res);
 
     if (!res.ok || !Array.isArray(data)) {
       console.error("Failed to fetch service ids", data);
@@ -67,6 +72,18 @@ const fetchAvailableServiceIds = async () => {
   } catch (error) {
     console.error("Unexpected error while fetching service ids", error);
     return [] as string[];
+  }
+};
+
+const safeParseJson = async (res: Response) => {
+  try {
+    return await res.clone().json();
+  } catch {
+    try {
+      return await res.text();
+    } catch {
+      return null;
+    }
   }
 };
 
@@ -184,7 +201,7 @@ serve(async (req) => {
       },
     );
 
-    const meData = await meRes.json();
+    const meData = await safeParseJson(meRes);
 
     if (!meRes.ok) {
       console.error("Melhor Envio error:", meData);
