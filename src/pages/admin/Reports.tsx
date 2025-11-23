@@ -75,8 +75,6 @@ const Reports = () => {
       ordersResult,
       customersResult,
       productsResult,
-      contactResult,
-      newsletterResult,
     ] = await Promise.all([
       supabase
         .from("orders")
@@ -84,25 +82,13 @@ const Reports = () => {
         .eq("payment_status", "paid"),
       supabase.from("customers").select("*", { count: "exact", head: true }),
       supabase.from("products").select("*", { count: "exact", head: true }),
-      supabase
-        .from("contact_messages")
-        .select("id, name, email, subject, created_at, source")
-        .order("created_at", { ascending: false })
-        .limit(10),
-      supabase
-        .from("newsletter_subscribers")
-        .select("id, email, subscribed_at, source")
-        .order("subscribed_at", { ascending: false })
-        .limit(10),
     ]);
 
-    if (ordersResult.error || customersResult.error || productsResult.error || contactResult.error || newsletterResult.error) {
+    if (ordersResult.error || customersResult.error || productsResult.error) {
       console.error("Erro ao carregar relatórios", {
         orders: ordersResult.error,
         customers: customersResult.error,
         products: productsResult.error,
-        contacts: contactResult.error,
-        newsletter: newsletterResult.error,
       });
       toast.error("Não foi possível carregar todos os dados. Tente novamente mais tarde.");
     }
@@ -110,8 +96,6 @@ const Reports = () => {
     const orders = ordersResult.data || [];
     const customersCount = customersResult.count || 0;
     const productsCount = productsResult.count || 0;
-    const contactData = contactResult.data || [];
-    const newsletterData = newsletterResult.data || [];
 
     // Calculate stats
     const totalRevenue = orders.reduce((sum, order) => sum + (order.total_cents || 0), 0) || 0;
@@ -148,9 +132,6 @@ const Reports = () => {
 
       setSalesData(salesByDay);
     }
-
-    setContactMessages(contactData);
-    setNewsletterSubscribers(newsletterData);
 
     setLoading(false);
   };
@@ -196,53 +177,14 @@ const Reports = () => {
 
   const handleExportContactMessages = async () => {
     setExportingContacts(true);
-    try {
-      const { data } = await supabase
-        .from("contact_messages")
-        .select("name, email, phone, subject, message, source, created_at")
-        .order("created_at", { ascending: false });
-
-      const rows = (data || []).map((item) => ({
-        Nome: item.name,
-        Email: item.email,
-        Telefone: item.phone || "-",
-        Assunto: item.subject,
-        Mensagem: item.message,
-        Origem: item.source || "-",
-        "Recebido em": formatDateTime(item.created_at),
-      }));
-
-      exportToCsv(rows, "contact-messages.csv");
-    } catch (error) {
-      console.error(error);
-      toast.error("Não foi possível exportar as mensagens de contato.");
-    } finally {
-      setExportingContacts(false);
-    }
+    toast.error("Funcionalidade temporariamente indisponível.");
+    setExportingContacts(false);
   };
 
   const handleExportNewsletter = async () => {
     setExportingNewsletter(true);
-    try {
-      const { data } = await supabase
-        .from("newsletter_subscribers")
-        .select("email, name, source, subscribed_at")
-        .order("subscribed_at", { ascending: false });
-
-      const rows = (data || []).map((item) => ({
-        Email: item.email,
-        Nome: item.name || "-",
-        Origem: item.source || "-",
-        "Inscrito em": formatDateTime(item.subscribed_at),
-      }));
-
-      exportToCsv(rows, "newsletter-subscribers.csv");
-    } catch (error) {
-      console.error(error);
-      toast.error("Não foi possível exportar os assinantes.");
-    } finally {
-      setExportingNewsletter(false);
-    }
+    toast.error("Funcionalidade temporariamente indisponível.");
+    setExportingNewsletter(false);
   };
 
   return (

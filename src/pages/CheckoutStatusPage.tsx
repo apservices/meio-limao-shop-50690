@@ -38,7 +38,6 @@ type OrderStatus = {
   total_cents: number | null;
   subtotal_cents: number | null;
   shipping_cents: number | null;
-  shipping_option_label: string | null;
   order_number: number | null;
   email: string | null;
 };
@@ -76,7 +75,7 @@ const CheckoutStatusPage = ({ variant }: { variant: StatusVariant }) => {
 
     const { data, error } = await supabase
       .from('orders')
-      .select('id, status, payment_status, total_cents, subtotal_cents, shipping_cents, shipping_option_label, order_number, email')
+      .select('id, status, payment_status, total_cents, subtotal_cents, shipping_cents, order_number, email')
       .eq('id', orderId)
       .single();
 
@@ -149,7 +148,7 @@ const CheckoutStatusPage = ({ variant }: { variant: StatusVariant }) => {
                   <span>{formatCurrencyFromCents(order.subtotal_cents)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Frete ({order.shipping_option_label || '—'})</span>
+                  <span className="text-muted-foreground">Frete</span>
                   <span>{formatCurrencyFromCents(order.shipping_cents)}</span>
                 </div>
               </div>

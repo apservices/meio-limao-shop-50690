@@ -334,45 +334,6 @@ export type Database = {
         }
         Relationships: []
       }
-      contact_messages: {
-        Row: {
-          created_at: string | null
-          email: string
-          id: string
-          message: string
-          metadata: Json | null
-          name: string
-          phone: string | null
-          source: string | null
-          status: string | null
-          subject: string
-        }
-        Insert: {
-          created_at?: string | null
-          email: string
-          id?: string
-          message: string
-          metadata?: Json | null
-          name: string
-          phone?: string | null
-          source?: string | null
-          status?: string | null
-          subject: string
-        }
-        Update: {
-          created_at?: string | null
-          email?: string
-          id?: string
-          message?: string
-          metadata?: Json | null
-          name?: string
-          phone?: string | null
-          source?: string | null
-          status?: string | null
-          subject?: string
-        }
-        Relationships: []
-      }
       coupons: {
         Row: {
           code: string
@@ -613,33 +574,6 @@ export type Database = {
           },
         ]
       }
-      newsletter_subscribers: {
-        Row: {
-          email: string
-          id: string
-          metadata: Json | null
-          name: string | null
-          source: string | null
-          subscribed_at: string | null
-        }
-        Insert: {
-          email: string
-          id?: string
-          metadata?: Json | null
-          name?: string | null
-          source?: string | null
-          subscribed_at?: string | null
-        }
-        Update: {
-          email?: string
-          id?: string
-          metadata?: Json | null
-          name?: string | null
-          source?: string | null
-          subscribed_at?: string | null
-        }
-        Relationships: []
-      }
       orders: {
         Row: {
           coupon_code: string | null
@@ -655,8 +589,6 @@ export type Database = {
           payment_status: string | null
           shipment_status: string | null
           shipping_cents: number | null
-          shipping_option_id: string | null
-          shipping_option_label: string | null
           status: string
           subtotal_cents: number | null
           total: number
@@ -678,8 +610,6 @@ export type Database = {
           payment_status?: string | null
           shipment_status?: string | null
           shipping_cents?: number | null
-          shipping_option_id?: string | null
-          shipping_option_label?: string | null
           status?: string
           subtotal_cents?: number | null
           total: number
@@ -701,8 +631,6 @@ export type Database = {
           payment_status?: string | null
           shipment_status?: string | null
           shipping_cents?: number | null
-          shipping_option_id?: string | null
-          shipping_option_label?: string | null
           status?: string
           subtotal_cents?: number | null
           total?: number
