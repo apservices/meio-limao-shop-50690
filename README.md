@@ -79,6 +79,7 @@ The checkout experience depends on a few edge functions (shipping quotes, paymen
 | Secret | Where it is used | Description |
 | --- | --- | --- |
 | `MELHOR_ENVIO_TOKEN` | `calculate-shipping` edge function | Personal access token for the Melhor Envio API so we can fetch real shipping options. |
+| `MELHOR_ENVIO_ORIGIN_POSTAL_CODE` | `calculate-shipping` edge function | (Optional) Override the origin CEP used in shipping quotes to match your registered Melhor Envio sender address. |
 | `MERCADO_PAGO_ACCESS_TOKEN` | `create-mercado-pago-payment` + webhook | Access token for Mercado Pago to create checkout preferences and pull payment status. |
 | `MERCADO_PAGO_WEBHOOK_SECRET` | `create-mercado-pago-payment` + webhook | Shared secret appended to the webhook URL; requests must include `?secret=...` or they will be rejected. |
 | `PUBLIC_SITE_URL` | `create-mercado-pago-payment` | The public storefront URL used to build the `back_urls` (e.g. `https://meiolimao.com.br`). |

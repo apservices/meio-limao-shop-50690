@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ZoomIn } from "lucide-react";
 
 interface ProductImageZoomProps {
@@ -46,6 +46,8 @@ const ProductImageZoom = ({ src, alt }: ProductImageZoomProps) => {
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0">
+          <DialogTitle className="sr-only">Visualização ampliada da imagem do produto</DialogTitle>
+          <DialogDescription className="sr-only">{alt}</DialogDescription>
           <div className="relative w-full h-full flex items-center justify-center bg-background">
             <img
               src={src}
