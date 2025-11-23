@@ -73,6 +73,10 @@ const ShippingCalculator = () => {
           details || (typeof data.error === 'string'
             ? data.error
             : 'Não foi possível calcular o frete para este CEP')
+        throw new Error(
+          typeof data.error === 'string'
+            ? data.error
+            : 'Não foi possível calcular o frete para este CEP'
         );
       }
 
