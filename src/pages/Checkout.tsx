@@ -299,7 +299,7 @@ const Checkout = () => {
         .from('orders')
         .insert({
           user_id: user.id,
-          customer_id,
+          customer_id: customerId,
           email: validatedData.email,
           total: totalCents / 100,
           shipping_cents: shippingCents,
@@ -308,8 +308,6 @@ const Checkout = () => {
           status: 'pending',
           payment_status: 'pending',
           payment_method: validatedData.paymentMethod === 'credit' ? 'credit_card' : 'pix',
-          shipping_option_id: selectedShippingOption.id,
-          shipping_option_label: shippingOptionLabel,
         })
         .select()
         .single();
