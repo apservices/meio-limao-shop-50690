@@ -14,6 +14,12 @@ const DEFAULT_VOLUME = {
   insurance_value: 50,
 };
 
+const ORIGIN_POSTAL_CODE = (() => {
+  const fromEnv = Deno.env.get("MELHOR_ENVIO_ORIGIN_POSTAL_CODE")?.replace(/\D/g, "");
+  if (fromEnv && fromEnv.length === 8) return fromEnv;
+  return "01001000";
+})();
+
 const parsePositiveNumber = (value: unknown, fallback: number) => {
   const parsed = Number(value);
   if (Number.isFinite(parsed) && parsed > 0) return parsed;
@@ -97,7 +103,7 @@ serve(async (req) => {
     volumes.push({ ...DEFAULT_VOLUME, weight: parsePositiveNumber(weight, DEFAULT_VOLUME.weight) });
   }
 
-  const fromPostalCode = "01001000";
+  const fromPostalCode = ORIGIN_POSTAL_CODE;
 
   const requestBody = {
     from: { postal_code: fromPostalCode },
