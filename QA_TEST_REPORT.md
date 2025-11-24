@@ -2,32 +2,19 @@
 
 ## Testes executados
 
-### 
-pm run lint
-- ? Sucesso  
-- Warnings presentes (React Fast Refresh e react-hooks), mas nenhum erro bloqueante.
+### Lint (`npm run lint`)
+- Sucesso com 19 avisos n√£o bloqueantes (React Fast Refresh e depend√™ncias de hooks) j√° conhecidos.
 
-### 
-pm run build
-- ? Sucesso  
-- ObservaÁ„o: bundle principal ~1.26 MB apÛs minificaÁ„o.  
-- Aviso do Vite/Rollup sobre chunk > 500 kB (apenas recomendaÁ„o, n„o È erro).
+### Build (`npm run build`)
+- Sucesso.
+- Bundle principal ~1.26 MB; aviso de chunk > 500 kB mantido como informa√ß√£o.
 
-### 
-ode testar-mercado-pago.mjs
-- ? Sucesso  
-- Status HTTP: **201**  
-- PreferÍncia criada com sucesso.  
-- init_point e sandbox_init_point retornados corretamente.
+### Mercado Pago (`node testar-mercado-pago.mjs`)
+- Falhou: MP_ACCESS_TOKEN n√£o encontrado no .env. √â necess√°rio configurar um token v√°lido para criar a prefer√™ncia.
 
-### 
-ode testar-melhor-envio.mjs
-- ? Sucesso  
-- Status HTTP: **200**  
-- CotaÁ„o retornada com m˙ltiplas opÁıes de frete: PAC, SEDEX, Jadlog, LATAM Cargo, Loggi, Buslog, JeT, etc.
+### Melhor Envio (`node testar-melhor-envio.mjs`)
+- Falhou: MELHOR_ENVIO_TOKEN n√£o encontrado no .env. √â necess√°rio configurar um token v√°lido para calcular o frete.
 
----
-
-## Conclus„o Geral
-O ambiente local est· **pronto para build, testes e deploy**.  
-IntegraÁıes de pagamento (Mercado Pago) e c·lculo de frete (Melhor Envio) funcionando com sucesso.
+## Conclus√£o
+- Lint e build conclu√≠dos com avisos conhecidos.
+- Testes de integra√ß√µes externas dependem de fornecer tokens reais em um arquivo .env conforme o exemplo disponibilizado.

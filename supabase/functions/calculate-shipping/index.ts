@@ -11,6 +11,60 @@ const MELHOR_ENVIO_BASE_URL = MELHOR_ENVIO_SANDBOX
   ? "https://sandbox.melhorenvio.com.br/api/v2"
   : "https://www.melhorenvio.com.br/api/v2";
 
+type DeliveryRange = {
+  min?: number;
+  max?: number;
+} | null;
+
+type DeliveryTime = {
+  days?: number;
+  min?: number;
+  max?: number;
+} | null;
+
+type MelhorEnvioCompany = {
+  id?: string | number | null;
+  name?: string;
+  picture?: string | null;
+  logo?: string | null;
+} | null;
+
+type MelhorEnvioOption = {
+  id?: string | number | null;
+  service_id?: string | number | null;
+  name?: string | null;
+  price?: number | string | null;
+  delivery_price?: number | string | null;
+  discount?: number | string | null;
+  delivery_range?: DeliveryRange;
+  delivery_time?: DeliveryTime;
+  company?: MelhorEnvioCompany;
+  error?: unknown;
+};
+
+type Volume = {
+  width: number;
+  height: number;
+  length: number;
+  weight: number;
+  insurance_value: number;
+};
+
+type RequestItem = {
+  quantity?: number;
+  width?: number;
+  height?: number;
+  length?: number;
+  weight?: number;
+  price?: number;
+};
+
+type RequestBody = {
+  cep?: string;
+  weight?: number;
+  items?: RequestItem[];
+};
+
 const DEFAULT_VOLUME = {
   width: 16,
   height: 2,
@@ -44,6 +98,12 @@ const sanitizeServiceIds = (value?: string | null) => {
 
 let cachedServiceIds: string[] | null = null;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isMelhorEnvioOption = (value: unknown): value is MelhorEnvioOption =>
+  isRecord(value);
+
 const fetchAvailableServiceIds = async () => {
   if (cachedServiceIds && cachedServiceIds.length > 0) return cachedServiceIds;
 
@@ -64,9 +124,13 @@ const fetchAvailableServiceIds = async () => {
     }
 
     cachedServiceIds = data
-      .map((service: any) => service?.id)
-      .filter((id) => typeof id === "string" || typeof id === "number")
-      .map((id) => String(id));
+      .map((service) => {
+        if (!isRecord(service)) return null;
+        const id = (service as { id?: string | number | null }).id;
+        if (typeof id === "string" || typeof id === "number") return String(id);
+        return null;
+      })
+      .filter((id): id is string => Boolean(id));
 
     return cachedServiceIds ?? [];
   } catch (error) {
@@ -75,7 +139,7 @@ const fetchAvailableServiceIds = async () => {
   }
 };
 
-const safeParseJson = async (res: Response) => {
+const safeParseJson = async (res: Response): Promise<unknown> => {
   try {
     return await res.clone().json();
   } catch {
@@ -87,7 +151,9 @@ const safeParseJson = async (res: Response) => {
   }
 };
 
-const formatDeliveryTime = (opt: any) => {
+const formatDeliveryTime = (
+  opt: Pick<MelhorEnvioOption, "delivery_range" | "delivery_time">,
+) => {
   const minDays = opt.delivery_range?.min ?? opt.delivery_time?.min ?? opt.delivery_time?.days;
   const maxDays = opt.delivery_range?.max ?? opt.delivery_time?.max ?? opt.delivery_time?.days;
 
@@ -122,7 +188,7 @@ serve(async (req) => {
     );
   }
 
-  let body: any;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
@@ -132,7 +198,7 @@ serve(async (req) => {
     );
   }
 
-  const { cep, weight, items } = body;
+  const { cep, weight, items } = (body ?? {}) as RequestBody;
 
   const sanitizedCep = sanitizeCep(typeof cep === "string" ? cep : "");
 
@@ -143,7 +209,7 @@ serve(async (req) => {
     );
   }
 
-  const volumes: any[] = [];
+  const volumes: Volume[] = [];
 
   if (Array.isArray(items) && items.length > 0) {
     items.forEach((item) => {
@@ -227,11 +293,12 @@ serve(async (req) => {
       );
     }
 
-    const successfulOptions = meData.filter((opt: any) => !opt.error);
+    const parsedOptions = meData.filter(isMelhorEnvioOption);
+    const successfulOptions = parsedOptions.filter((opt) => !opt.error);
 
     if (successfulOptions.length === 0) {
-      const errors = meData
-        .map((opt: any) => opt?.error ?? null)
+      const errors = parsedOptions
+        .map((opt) => opt?.error ?? null)
         .filter(Boolean);
 
       return new Response(
@@ -246,7 +313,7 @@ serve(async (req) => {
     }
 
     const options = successfulOptions
-      .map((opt: any) => {
+      .map((opt) => {
         const formattedDelivery = formatDeliveryTime(opt);
         const deliveryDays = opt.delivery_time?.days
           ?? opt.delivery_range?.max
