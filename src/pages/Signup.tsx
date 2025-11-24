@@ -35,6 +35,7 @@ const Signup = () => {
         description: "Verifique seu email para confirmar o cadastro." 
       });
       navigate("/");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         toast({

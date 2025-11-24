@@ -1,4 +1,4 @@
-ï»¿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import mercadopago from 'mercadopago';
 
 // Configura o access token do Mercado Pago a partir do .env.local
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ id: response.body.id });
   } catch (error) {
-    console.error('Erro criando a preferÃªncia Mercado Pago:', error);
-    return NextResponse.json({ error: 'Erro ao criar preferÃªncia' }, { status: 500 });
+    console.error('Erro criando a preferência Mercado Pago:', error);
+    return NextResponse.json({ error: 'Erro ao criar preferência' }, { status: 500 });
   }
 }

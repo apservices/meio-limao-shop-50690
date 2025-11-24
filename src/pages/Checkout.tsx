@@ -38,6 +38,7 @@ const formatCurrency = (value: number) =>
 
 const logCheckoutEvent = async (
   action: string,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   diff: Record<string, any>,
   options?: { actorId?: string | null; entityId?: string | null }
 ) => {

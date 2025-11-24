@@ -64,6 +64,7 @@ const ShippingCalculator = () => {
 
       if (data?.error) {
         const details = Array.isArray(data.details)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
           ? data.details.find((d: any) => typeof d?.message === 'string')?.message
           : typeof data.details === 'string'
           ? data.details

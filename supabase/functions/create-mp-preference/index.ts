@@ -1,4 +1,4 @@
-ï»¿import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 serve(async (req) => {
@@ -9,17 +9,18 @@ serve(async (req) => {
   const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN");
   if (!MP_ACCESS_TOKEN) {
     return new Response(
-      JSON.stringify({ error: "MP_ACCESS_TOKEN nÃ£o configurado" }),
+      JSON.stringify({ error: "MP_ACCESS_TOKEN não configurado" }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any;
   try {
     body = await req.json();
   } catch {
     return new Response(
-      JSON.stringify({ error: "JSON invÃ¡lido" }),
+      JSON.stringify({ error: "JSON inválido" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
@@ -28,7 +29,7 @@ serve(async (req) => {
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return new Response(
-      JSON.stringify({ error: "items Ã© obrigatÃ³rio e deve ser um array" }),
+      JSON.stringify({ error: "items é obrigatório e deve ser um array" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }

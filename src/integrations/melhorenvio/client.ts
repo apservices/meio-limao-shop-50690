@@ -4,6 +4,7 @@ const BASE_URL = import.meta.env.VITE_MELHOR_ENVIO_SANDBOX === "true"
 
 const TOKEN = import.meta.env.VITE_MELHOR_ENVIO_TOKEN;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function melhorEnvioQuote(payload: any) {
   const res = await fetch(`${BASE_URL}/me/shipment/calculate`, {
     method: "POST",

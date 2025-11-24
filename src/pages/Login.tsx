@@ -22,6 +22,7 @@ const Login = () => {
       await signIn(email, password);
       toast({ title: "Login realizado com sucesso!" });
       navigate("/");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast({
         title: "Erro no login",
