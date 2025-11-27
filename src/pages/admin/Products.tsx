@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Edit } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit, Sparkles, Upload, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -59,6 +59,8 @@ const Products = () => {
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [analyzingImage, setAnalyzingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string>("");
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -177,6 +179,7 @@ const Products = () => {
 
   const resetForm = () => {
     setEditingProduct(null);
+    setImagePreview("");
     setFormData({
       name: "",
       description: "",
@@ -191,6 +194,67 @@ const Products = () => {
       is_new: false,
       is_active: true,
     });
+  };
+
+  const handleImageUrlChange = (url: string) => {
+    setFormData({ ...formData, image_url: url });
+    setImagePreview(url);
+  };
+
+  const analyzeImageWithAI = async () => {
+    if (!formData.image_url) {
+      toast({
+        title: "Adicione uma URL de imagem primeiro",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAnalyzingImage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "analyze-product-image",
+        {
+          body: { imageUrl: formData.image_url },
+        }
+      );
+
+      if (error) throw error;
+
+      if (data?.success && data?.data) {
+        const aiData = data.data;
+        
+        // Encontrar categoria correspondente
+        const matchedCategory = categories.find(
+          cat => cat.name.toLowerCase().includes(aiData.category.toLowerCase()) ||
+                 aiData.category.toLowerCase().includes(cat.name.toLowerCase())
+        );
+
+        setFormData({
+          ...formData,
+          name: aiData.name || formData.name,
+          description: aiData.description || formData.description,
+          price: aiData.suggestedPrice?.toString() || formData.price,
+          colors: aiData.colors?.join(", ") || formData.colors,
+          sizes: aiData.sizes?.join(", ") || formData.sizes,
+          category_id: matchedCategory?.id || formData.category_id,
+        });
+
+        toast({
+          title: "✨ Análise concluída!",
+          description: "Campos preenchidos com informações da IA",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao analisar imagem:", error);
+      toast({
+        title: "Erro ao analisar imagem",
+        description: "Tente novamente ou preencha manualmente",
+        variant: "destructive",
+      });
+    } finally {
+      setAnalyzingImage(false);
+    }
   };
 
   return (
@@ -315,16 +379,58 @@ const Products = () => {
                   <p className="text-xs text-muted-foreground mt-1">Separar por vírgula</p>
                 </div>
                 
-                <div>
-                  <Label htmlFor="image_url">URL da Imagem Principal *</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="image_url">URL da Imagem Principal *</Label>
+                    {formData.image_url && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={analyzeImageWithAI}
+                        disabled={analyzingImage}
+                        className="gap-2"
+                      >
+                        {analyzingImage ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Analisando...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4" />
+                            Analisar com IA
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                   <Input
                     id="image_url"
                     value={formData.image_url}
-                    onChange={(e) =>
-                      setFormData({ ...formData, image_url: e.target.value })
-                    }
+                    onChange={(e) => handleImageUrlChange(e.target.value)}
                     placeholder="https://exemplo.com/imagem.jpg"
                   />
+                  {imagePreview && (
+                    <div className="relative w-full aspect-square max-w-xs mx-auto rounded-lg overflow-hidden border-2 border-border">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={() => {
+                          setImagePreview("");
+                          toast({
+                            title: "Erro ao carregar imagem",
+                            description: "Verifique se a URL está correta",
+                            variant: "destructive",
+                          });
+                        }}
+                      />
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    💡 Cole a URL da imagem e clique em "Analisar com IA" para autopreenchimento
+                  </p>
                 </div>
 
                 <div>
