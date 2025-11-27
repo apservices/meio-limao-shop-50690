@@ -64,7 +64,7 @@ const formatDeliveryLabel = (option: ShippingOption) => {
 };
 
 const Checkout = () => {
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, discount, couponCode, hasFreeShipping } = useCart();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -218,7 +218,9 @@ const Checkout = () => {
     }
   };
 
-  const finalTotal = totalPrice + shippingCost;
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const actualShippingCost = hasFreeShipping ? 0 : shippingCost;
+  const finalTotal = totalPrice + actualShippingCost;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,9 +294,11 @@ const Checkout = () => {
         selectedShippingOption.name,
       ].filter(Boolean).join(' - ');
 
-      const shippingCents = Math.round(selectedShippingOption.price * 100);
-      const subtotalCents = Math.round(totalPrice * 100);
-      const totalCents = subtotalCents + shippingCents;
+      const actualShipping = hasFreeShipping ? 0 : selectedShippingOption.price;
+      const shippingCents = Math.round(actualShipping * 100);
+      const discountCents = Math.round(discount * 100);
+      const subtotalCents = Math.round(subtotal * 100);
+      const totalCents = subtotalCents - discountCents + shippingCents;
 
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
@@ -305,6 +309,8 @@ const Checkout = () => {
           total: totalCents / 100,
           shipping_cents: shippingCents,
           subtotal_cents: subtotalCents,
+          discount_cents: discountCents,
+          coupon_code: couponCode,
           total_cents: totalCents,
           status: 'pending',
           payment_status: 'pending',
@@ -759,11 +765,21 @@ const Checkout = () => {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>{formatCurrency(totalPrice)}</span>
+                  <span>{formatCurrency(subtotal)}</span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                    <span>Desconto {couponCode && `(${couponCode})`}</span>
+                    <span>- {formatCurrency(discount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
-                  <span>{shippingCost > 0 ? formatCurrency(shippingCost) : 'Calcular'}</span>
+                  {hasFreeShipping ? (
+                    <span className="text-green-600 dark:text-green-400 font-semibold">GRÁTIS</span>
+                  ) : (
+                    <span>{shippingCost > 0 ? formatCurrency(shippingCost) : 'Calcular'}</span>
+                  )}
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex justify-between font-semibold text-lg">
