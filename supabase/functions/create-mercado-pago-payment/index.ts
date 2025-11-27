@@ -22,7 +22,7 @@ serve(async (req) => {
     );
   }
 
-  const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN");
+  const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
   if (!MP_ACCESS_TOKEN) {
     return new Response(
       JSON.stringify({ error: "MP_ACCESS_TOKEN não configurado" }),
