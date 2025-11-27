@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-signature, x-request-id',
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -16,17 +16,75 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const url = new URL(req.url);
-  const providedSecret = url.searchParams.get('secret');
-  if (webhookSecret && providedSecret !== webhookSecret) {
-    console.warn('Received webhook with invalid secret');
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+  // Verify HMAC signature
+  const xSignature = req.headers.get('x-signature');
+  const xRequestId = req.headers.get('x-request-id');
+  
+  if (!xSignature || !xRequestId) {
+    console.warn('Missing required headers: x-signature or x-request-id');
+    return new Response(JSON.stringify({ error: 'Missing signature headers' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 401,
     });
   }
 
   const rawBody = await req.text();
+  
+  // Validate HMAC signature
+  if (webhookSecret) {
+    try {
+      const parts = xSignature.split(',');
+      const tsParam = parts.find(p => p.startsWith('ts='));
+      const v1Param = parts.find(p => p.startsWith('v1='));
+      
+      if (!tsParam || !v1Param) {
+        throw new Error('Invalid signature format');
+      }
+      
+      const ts = tsParam.replace('ts=', '');
+      const hash = v1Param.replace('v1=', '');
+      
+      // Build manifest: id + request-id + ts
+      const dataId = JSON.parse(rawBody).data?.id || '';
+      const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+      
+      // Calculate HMAC
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(webhookSecret);
+      const messageData = encoder.encode(manifest);
+      
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+      
+      const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+      const calculatedHash = Array.from(new Uint8Array(signature))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      
+      if (calculatedHash !== hash) {
+        console.warn('Invalid HMAC signature');
+        return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        });
+      }
+      
+      console.log('HMAC signature verified successfully');
+    } catch (error) {
+      console.error('Error verifying signature:', error);
+      return new Response(JSON.stringify({ error: 'Signature verification failed' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+  } else {
+    console.warn('MERCADO_PAGO_WEBHOOK_SECRET not configured - signature verification skipped');
+  }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any;
   try {
