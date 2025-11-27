@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle2, Hourglass, Loader2, XCircle } from "lucide-react";
+import { ConvertGuestModal } from "@/components/ConvertGuestModal";
 
 const formatCurrencyFromCents = (value?: number | null) => {
   if (value == null) return "--";
@@ -61,6 +62,8 @@ const CheckoutStatusPage = ({ variant }: { variant: StatusVariant }) => {
   const [order, setOrder] = useState<OrderStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
 
   const loadOrder = useCallback(async () => {
     if (!orderId) {
@@ -92,7 +95,17 @@ const CheckoutStatusPage = ({ variant }: { variant: StatusVariant }) => {
 
   useEffect(() => {
     void loadOrder();
-  }, [loadOrder]);
+    
+    // Verificar se é usuário anônimo
+    const checkAnonymous = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.is_anonymous && variant === 'success') {
+        setIsAnonymous(true);
+      }
+    };
+    
+    void checkAnonymous();
+  }, [loadOrder, variant]);
 
   const copy = statusCopy[variant];
 
@@ -171,6 +184,18 @@ const CheckoutStatusPage = ({ variant }: { variant: StatusVariant }) => {
             </div>
           )}
 
+          {isAnonymous && (
+            <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-6">
+              <h3 className="font-semibold text-lg mb-2">Salve seus dados!</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Crie uma conta para acompanhar seu pedido e facilitar suas próximas compras.
+              </p>
+              <Button onClick={() => setShowConvertModal(true)} size="lg">
+                Criar Conta Agora
+              </Button>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button asChild>
               <Link to="/shop">Voltar para a loja</Link>
@@ -181,6 +206,8 @@ const CheckoutStatusPage = ({ variant }: { variant: StatusVariant }) => {
           </div>
         </div>
       </main>
+
+      <ConvertGuestModal open={showConvertModal} onOpenChange={setShowConvertModal} />
     </div>
   );
 };
