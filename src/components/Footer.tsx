@@ -35,7 +35,7 @@ const Footer = () => {
                 <Facebook className="h-5 w-5" />
               </a>
               <a
-                href="mailto:contato@meiolimao.com.br"
+                href="mailto:contato@meiolimao.shop"
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
                 <Mail className="h-5 w-5" />
@@ -105,7 +105,7 @@ const Footer = () => {
 
         <div className="border-t pt-8 text-center text-sm text-muted-foreground">
           <p>© {new Date().getFullYear()} Meio Limão. Todos os direitos reservados.</p>
-          <p className="mt-2">CNPJ: 07.704.241/0001-60 | contato@meiolimao.com.br</p>
+          <p className="mt-2">CNPJ: 07.704.241/0001-60 | contato@meiolimao.shop</p>
         </div>
       </div>
     </footer>
