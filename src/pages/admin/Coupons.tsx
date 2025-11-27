@@ -37,6 +37,7 @@ interface Coupon {
   value: number;
   min_subtotal_cents: number;
   first_purchase_only: boolean;
+  free_shipping: boolean;
   max_uses?: number;
   used_count: number;
   starts_at?: string;
@@ -58,6 +59,7 @@ const Coupons = () => {
     value: 0,
     min_subtotal_cents: 0,
     first_purchase_only: false,
+    free_shipping: false,
     max_uses: "",
     starts_at: "",
     ends_at: "",
@@ -92,6 +94,7 @@ const Coupons = () => {
       value: parseFloat(formData.value.toString()),
       min_subtotal_cents: Math.round(parseFloat(formData.min_subtotal_cents.toString()) * 100),
       first_purchase_only: formData.first_purchase_only,
+      free_shipping: formData.free_shipping,
       max_uses: formData.max_uses ? parseInt(formData.max_uses) : null,
       starts_at: formData.starts_at || null,
       ends_at: formData.ends_at || null,
@@ -143,6 +146,7 @@ const Coupons = () => {
       value: coupon.value,
       min_subtotal_cents: coupon.min_subtotal_cents / 100,
       first_purchase_only: coupon.first_purchase_only,
+      free_shipping: coupon.free_shipping,
       max_uses: coupon.max_uses?.toString() || "",
       starts_at: coupon.starts_at || "",
       ends_at: coupon.ends_at || "",
@@ -159,6 +163,7 @@ const Coupons = () => {
       value: 0,
       min_subtotal_cents: 0,
       first_purchase_only: false,
+      free_shipping: false,
       max_uses: "",
       starts_at: "",
       ends_at: "",
@@ -284,6 +289,16 @@ const Coupons = () => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Switch
+                      id="free_shipping"
+                      checked={formData.free_shipping}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, free_shipping: checked })
+                      }
+                    />
+                    <Label htmlFor="free_shipping">Frete Grátis</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
                       id="is_active"
                       checked={formData.is_active}
                       onCheckedChange={(checked) =>
@@ -320,6 +335,7 @@ const Coupons = () => {
                 <TableHead>Código</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Valor</TableHead>
+                <TableHead>Benefícios</TableHead>
                 <TableHead>Usos</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -328,7 +344,7 @@ const Coupons = () => {
             <TableBody>
               {filteredCoupons.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     Nenhum cupom encontrado
                   </TableCell>
                 </TableRow>
@@ -343,6 +359,20 @@ const Coupons = () => {
                       {coupon.type === "percentage"
                         ? `${coupon.value}%`
                         : `R$ ${coupon.value.toFixed(2)}`}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        {coupon.free_shipping && (
+                          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full w-fit">
+                            Frete Grátis
+                          </span>
+                        )}
+                        {coupon.first_purchase_only && (
+                          <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full w-fit">
+                            1ª Compra
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {coupon.used_count} / {coupon.max_uses || "∞"}
