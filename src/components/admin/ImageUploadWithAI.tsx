@@ -149,21 +149,26 @@ export const ImageUploadWithAI = ({ onImageAnalyzed, currentImageUrl }: ImageUpl
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm font-semibold">
-          Imagem do Produto
-        </Label>
-        {preview && !uploading && !analyzing && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={clearImage}
-          >
-            <X className="h-4 w-4 mr-2" />
-            Remover
-          </Button>
-        )}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-base font-bold text-foreground">
+            📸 Imagem Principal do Produto
+          </Label>
+          {preview && !uploading && !analyzing && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={clearImage}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Remover
+            </Button>
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          <strong>Dimensões recomendadas:</strong> 1200×1200px (formato quadrado) • <strong>Formatos:</strong> JPG, PNG ou WEBP • <strong>Tamanho máx:</strong> 5MB
+        </p>
       </div>
 
       {/* Preview */}
@@ -189,22 +194,25 @@ export const ImageUploadWithAI = ({ onImageAnalyzed, currentImageUrl }: ImageUpl
 
       {/* Upload Button */}
       {!preview && (
-        <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+        <div className="border-3 border-dashed border-primary/40 rounded-lg p-12 text-center bg-primary/5 hover:bg-primary/10 transition-colors">
           <label htmlFor="image-upload" className="cursor-pointer">
-            <div className="flex flex-col items-center gap-3">
-              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Upload className="h-8 w-8 text-primary" />
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-20 w-20 rounded-full bg-primary/20 flex items-center justify-center">
+                <Upload className="h-10 w-10 text-primary" />
               </div>
               <div>
-                <p className="font-medium mb-1">Clique para fazer upload</p>
-                <p className="text-sm text-muted-foreground">
-                  JPG, PNG ou WEBP (máx. 5MB)
+                <p className="text-lg font-bold mb-2">Arraste sua imagem ou clique para fazer upload</p>
+                <p className="text-sm text-muted-foreground mb-1">
+                  Recomendado: 1200×1200px (quadrado)
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  JPG, PNG ou WEBP • Máximo 5MB
                 </p>
               </div>
-              <Button type="button" variant="outline" size="sm" className="mt-2" asChild>
+              <Button type="button" variant="default" size="lg" className="mt-3" asChild>
                 <span>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Upload com Análise de IA
+                  <Sparkles className="h-5 w-5 mr-2" />
+                  Fazer Upload e Analisar com IA
                 </span>
               </Button>
             </div>
