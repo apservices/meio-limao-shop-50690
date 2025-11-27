@@ -83,7 +83,11 @@ serve(async (req) => {
       });
     }
   } else {
-    console.warn('MERCADO_PAGO_WEBHOOK_SECRET not configured - signature verification skipped');
+    console.error('MERCADO_PAGO_WEBHOOK_SECRET not configured');
+    return new Response(JSON.stringify({ error: 'Webhook not properly configured' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    });
   }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any;
