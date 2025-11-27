@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, Heart, User, MapPin } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Package, Heart, User, MapPin, Gift } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -17,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { CpfInput } from "@/components/CpfInput";
+import { AddressManager } from "@/components/AddressManager";
 
 const profileSchema = z.object({
   fullName: z.string().min(3, "Informe seu nome completo"),
@@ -27,6 +30,8 @@ const profileSchema = z.object({
     .regex(/^(\d{11}|\d{14})$/, "Documento deve ter 11 ou 14 dígitos")
     .optional()
     .or(z.literal("")),
+  birthDate: z.string().optional().or(z.literal("")),
+  gender: z.enum(['M', 'F', 'other', 'prefer_not_say']).optional(),
 });
 
 const addressSchema = z.object({
@@ -94,6 +99,8 @@ const Account = () => {
     email: "",
     phone: "",
     document: "",
+    birthDate: "",
+    gender: "" as "" | "M" | "F" | "other" | "prefer_not_say",
   });
   const [profileInitialized, setProfileInitialized] = useState(false);
   const [addressForm, setAddressForm] = useState<AddressFormState>(emptyAddress);
@@ -212,6 +219,8 @@ const Account = () => {
         email: profileData?.email || customer?.email || user?.email || "",
         phone: customer?.phone || "",
         document: customer?.document || "",
+        birthDate: customer?.birth_date || "",
+        gender: (customer?.gender as "M" | "F" | "other" | "prefer_not_say") || "",
       });
       setProfileInitialized(true);
     }
@@ -233,6 +242,8 @@ const Account = () => {
         email: parsed.email,
         phone: parsed.phone || null,
         document: parsed.document || null,
+        birth_date: parsed.birthDate || null,
+        gender: parsed.gender || null,
       }).eq("id", customer.id);
     },
     onSuccess: async () => {
@@ -408,27 +419,79 @@ const Account = () => {
               <div className="text-center py-16 text-muted-foreground">Carregando pedidos...</div>
             ) : orders && orders.length > 0 ? (
               orders.map((order) => (
-                <div key={order.id} className="bg-card rounded-2xl p-6 shadow-sm border">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pedido #{order.order_number ?? order.id.slice(0, 6)}</p>
+                <div key={order.id} className="bg-card rounded-2xl p-6 shadow-sm border space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <p className="text-sm text-muted-foreground">
+                          Pedido #{order.order_number ?? order.id.slice(0, 6)}
+                        </p>
+                        {order.is_gift && (
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <Gift className="h-3 w-3" />
+                            Presente
+                          </Badge>
+                        )}
+                      </div>
                       <h3 className="text-xl font-serif font-semibold">
                         {formatCurrency.format((order.total_cents ?? Math.round(order.total * 100)) / 100)}
                       </h3>
                       <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
+                      
+                      {order.is_gift && order.gift_message && (
+                        <div className="mt-3 p-3 bg-accent/20 rounded-lg border">
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Mensagem do presente:</p>
+                          <p className="text-sm italic">"{order.gift_message}"</p>
+                        </div>
+                      )}
                     </div>
-                    <Badge variant="secondary" className="w-fit">
-                      {order.status}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge variant="secondary" className="w-fit">
+                        {order.status}
+                      </Badge>
+                      <Badge variant="outline" className="w-fit">
+                        {order.payment_status}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="mt-4 space-y-2">
-                    {order.order_items?.map((item) => (
-                      <div key={item.id} className="flex justify-between text-sm text-muted-foreground">
-                        <span>{item.name_snapshot}</span>
-                        <span>x{item.qty}</span>
-                      </div>
-                    ))}
+                  
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium text-sm mb-3">Itens do pedido:</h4>
+                    <div className="space-y-2">
+                      {order.order_items?.map((item) => (
+                        <div key={item.id} className="flex items-center gap-3 text-sm">
+                          {item.image_url && (
+                            <img 
+                              src={item.image_url} 
+                              alt={item.name_snapshot} 
+                              className="w-12 h-12 object-cover rounded-lg"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <p className="font-medium">{item.name_snapshot}</p>
+                            {item.sku_snapshot && (
+                              <p className="text-xs text-muted-foreground">SKU: {item.sku_snapshot}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">
+                              {formatCurrency.format(item.unit_price_cents / 100)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Qtd: {item.qty}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
+                  {order.coupon_code && (
+                    <div className="border-t pt-3">
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Cupom aplicado: </span>
+                        <Badge variant="secondary">{order.coupon_code}</Badge>
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
@@ -481,163 +544,21 @@ const Account = () => {
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-serif font-semibold">Meus Endereços</h2>
-                  <p className="text-sm text-muted-foreground">Cadastre e gerencie seus endereços de entrega.</p>
+                  <p className="text-sm text-muted-foreground">Gerencie seus endereços de entrega e cobrança.</p>
                 </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setAddressForm(emptyAddress)}
-                >
-                  Novo endereço
-                </Button>
               </div>
 
-              <div className="space-y-4">
-                {addressesLoading ? (
-                  <p className="text-sm text-muted-foreground">Carregando endereços...</p>
-                ) : addresses && addresses.length > 0 ? (
-                  addresses.map((address) => (
-                    <div key={address.id} className="border rounded-2xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                      <div>
-                        <p className="font-semibold">{address.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {address.street}, {address.number} - {address.district}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {address.city}/{address.state} • CEP {address.zipcode}
-                        </p>
-                        {address.is_default && <Badge className="mt-2">Padrão</Badge>}
-                      </div>
-                      <Button variant="ghost" onClick={() => handleAddressEdit(address)}>
-                        Editar
-                      </Button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nenhum endereço cadastrado.</p>
-                )}
-              </div>
-
-              <form
-                className="space-y-4"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  addressMutation.mutate(addressForm);
-                }}
-              >
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="address-name">Nome</Label>
-                    <Input
-                      id="address-name"
-                      value={addressForm.name}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, name: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address-label">Identificação</Label>
-                    <Input
-                      id="address-label"
-                      value={addressForm.label}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, label: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address-phone">Telefone</Label>
-                    <Input
-                      id="address-phone"
-                      value={addressForm.phone}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, phone: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address-zipcode">CEP</Label>
-                    <Input
-                      id="address-zipcode"
-                      value={addressForm.zipcode}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, zipcode: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address-state">Estado</Label>
-                    <Input
-                      id="address-state"
-                      value={addressForm.state}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, state: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address-city">Cidade</Label>
-                    <Input
-                      id="address-city"
-                      value={addressForm.city}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, city: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address-district">Bairro</Label>
-                    <Input
-                      id="address-district"
-                      value={addressForm.district}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, district: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address-street">Rua</Label>
-                    <Input
-                      id="address-street"
-                      value={addressForm.street}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, street: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address-number">Número</Label>
-                    <Input
-                      id="address-number"
-                      value={addressForm.number}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, number: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="address-complement">Complemento</Label>
-                    <Input
-                      id="address-complement"
-                      value={addressForm.complement}
-                      onChange={(e) => setAddressForm((prev) => ({ ...prev, complement: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="address-default"
-                    checked={addressForm.isDefault}
-                    onCheckedChange={(checked) => setAddressForm((prev) => ({ ...prev, isDefault: checked }))}
-                  />
-                  <Label htmlFor="address-default">Definir como endereço padrão</Label>
-                </div>
-
-                <div className="flex gap-3">
-                  {addressForm.id && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setAddressForm(emptyAddress)}
-                    >
-                      Cancelar
-                    </Button>
-                  )}
-                  <Button type="submit" disabled={addressMutation.isPending}>
-                    {addressForm.id ? "Atualizar endereço" : "Salvar endereço"}
-                  </Button>
-                </div>
-              </form>
+              {addressesLoading ? (
+                <p className="text-sm text-muted-foreground">Carregando endereços...</p>
+              ) : customer && addresses ? (
+                <AddressManager 
+                  addresses={addresses} 
+                  customerId={customer.id}
+                  onRefetch={refetchAddresses}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum endereço cadastrado.</p>
+              )}
             </div>
           </TabsContent>
 
@@ -681,12 +602,39 @@ const Account = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="profile-document">CPF/CNPJ</Label>
-                    <Input
-                      id="profile-document"
+                    <CpfInput
                       value={profileForm.document}
-                      onChange={(e) => setProfileForm((prev) => ({ ...prev, document: e.target.value }))}
+                      onChange={(value) => setProfileForm((prev) => ({ ...prev, document: value }))}
+                      label="CPF/CNPJ"
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="profile-birth-date">Data de Nascimento</Label>
+                    <Input
+                      id="profile-birth-date"
+                      type="date"
+                      value={profileForm.birthDate}
+                      onChange={(e) => setProfileForm((prev) => ({ ...prev, birthDate: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="profile-gender">Gênero</Label>
+                    <Select 
+                      value={profileForm.gender} 
+                      onValueChange={(value: "M" | "F" | "other" | "prefer_not_say") => 
+                        setProfileForm((prev) => ({ ...prev, gender: value }))
+                      }
+                    >
+                      <SelectTrigger id="profile-gender">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="M">Masculino</SelectItem>
+                        <SelectItem value="F">Feminino</SelectItem>
+                        <SelectItem value="other">Outro</SelectItem>
+                        <SelectItem value="prefer_not_say">Prefiro não informar</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
