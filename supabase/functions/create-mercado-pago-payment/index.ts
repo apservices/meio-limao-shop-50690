@@ -26,6 +26,9 @@ serve(async (req) => {
   }
 
   const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
   console.log("[MP Payment] Token present:", !!MP_ACCESS_TOKEN);
   console.log("[MP Payment] Token starts with:", MP_ACCESS_TOKEN?.substring(0, 10));
   
@@ -58,6 +61,8 @@ serve(async (req) => {
     );
   }
 
+  const webhookUrl = `${SUPABASE_URL}/functions/v1/mercado-pago-webhook`;
+  
   const preferencePayload: any = {
     external_reference: String(orderId),
     items: items.map((item: any) => ({
@@ -72,6 +77,7 @@ serve(async (req) => {
       failure: "https://meiolimao.shop/checkout/erro",
       pending: "https://meiolimao.shop/checkout/pendente",
     },
+    notification_url: webhookUrl,
     metadata: {
       orderId,
       shippingOption,
@@ -129,6 +135,39 @@ serve(async (req) => {
   }
 
   console.log("[MP Payment] Success - Preference created:", data.id);
+  
+  // Create payment record in database
+  if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    const totalAmount = items.reduce((sum: number, item: any) => 
+      sum + (item.unit_price * item.quantity), 0
+    );
+    
+    const paymentRecord = {
+      order_id: orderId,
+      provider: 'mercado_pago',
+      provider_ref: data.id,
+      status: 'pending',
+      amount_cents: Math.round(totalAmount * 100),
+      payload: data,
+    };
+    
+    const paymentRes = await fetch(`${SUPABASE_URL}/rest/v1/payments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify(paymentRecord),
+    });
+    
+    if (!paymentRes.ok) {
+      console.error("[MP Payment] Failed to create payment record:", await paymentRes.text());
+    } else {
+      console.log("[MP Payment] Payment record created successfully");
+    }
+  }
   
   return new Response(
     JSON.stringify({
