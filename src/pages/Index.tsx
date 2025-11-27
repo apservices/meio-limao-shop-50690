@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import HeroSection from "@/components/HeroSection";
@@ -11,13 +12,32 @@ import LooksSection from "@/components/LooksSection";
 import InstagramFeed from "@/components/InstagramFeed";
 import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
+import { ProductRecommendations } from "@/components/ProductRecommendations";
 import { Button } from "@/components/ui/button";
-import { mapMockProductToStoreProduct, mockProducts } from "@/data/products";
 import { ArrowRight } from "lucide-react";
+import { useProductsQuery } from "@/hooks/useProductsQuery";
+import { toProduct } from "@/types/product";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  const newArrivals = mockProducts.filter(p => p.isNew).slice(0, 4).map(mapMockProductToStoreProduct);
-  const bestSellers = mockProducts.slice(0, 4).map(mapMockProductToStoreProduct);
+  const { data } = useProductsQuery();
+  const { user } = useAuth();
+  
+  const newArrivals = useMemo(() => {
+    if (!data?.products) return [];
+    return data.products
+      .filter(p => p.is_new)
+      .slice(0, 8)
+      .map(toProduct);
+  }, [data?.products]);
+
+  const bestSellers = useMemo(() => {
+    if (!data?.products) return [];
+    return data.products
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 8)
+      .map(toProduct);
+  }, [data?.products]);
 
   return (
     <div className="min-h-screen">
@@ -30,6 +50,16 @@ const Index = () => {
         {/* Benefits */}
         <BenefitsSection />
 
+        {/* Personalized Recommendations - Only show if user is logged in */}
+        {user && (
+          <section className="py-16 container mx-auto px-4">
+            <ProductRecommendations 
+              userId={user.id} 
+              limit={8}
+            />
+          </section>
+        )}
+
         {/* New Arrivals */}
         <section className="py-16 container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
@@ -37,7 +67,7 @@ const Index = () => {
               <h2 className="text-3xl md:text-4xl font-bold mb-2">Novidades</h2>
               <p className="text-muted-foreground">Acabaram de chegar</p>
             </div>
-            <Link to="/shop">
+            <Link to="/novidades">
               <Button variant="outline" className="group">
                 Ver Tudo
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -45,11 +75,17 @@ const Index = () => {
             </Link>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          {newArrivals.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {newArrivals.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
-          </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhum produto novo disponível no momento
+            </div>
+          )}
         </section>
 
         {/* CTA Banner */}
@@ -78,11 +114,17 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+          {bestSellers.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {bestSellers.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
-          </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhum produto disponível no momento
+            </div>
+          )}
         </section>
 
         <LooksSection />

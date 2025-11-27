@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Edit, Sparkles, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit } from "lucide-react";
+import { ImageUploadWithAI } from "@/components/admin/ImageUploadWithAI";
 import {
   Table,
   TableBody,
@@ -59,8 +60,6 @@ const Products = () => {
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [analyzingImage, setAnalyzingImage] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string>("");
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -179,7 +178,6 @@ const Products = () => {
 
   const resetForm = () => {
     setEditingProduct(null);
-    setImagePreview("");
     setFormData({
       name: "",
       description: "",
@@ -196,64 +194,36 @@ const Products = () => {
     });
   };
 
-  const handleImageUrlChange = (url: string) => {
-    setFormData({ ...formData, image_url: url });
-    setImagePreview(url);
-  };
+  const handleImageAnalyzed = (data: {
+    imageUrl: string;
+    productData?: {
+      name?: string;
+      description?: string;
+      colors?: string[];
+      sizes?: string[];
+      suggestedPrice?: number;
+      category?: string;
+    };
+  }) => {
+    setFormData(prev => ({
+      ...prev,
+      image_url: data.imageUrl,
+      ...(data.productData?.name && { name: data.productData.name }),
+      ...(data.productData?.description && { description: data.productData.description }),
+      ...(data.productData?.suggestedPrice && { price: data.productData.suggestedPrice.toString() }),
+      ...(data.productData?.colors && { colors: data.productData.colors.join(', ') }),
+      ...(data.productData?.sizes && { sizes: data.productData.sizes.join(', ') }),
+    }));
 
-  const analyzeImageWithAI = async () => {
-    if (!formData.image_url) {
-      toast({
-        title: "Adicione uma URL de imagem primeiro",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAnalyzingImage(true);
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "analyze-product-image",
-        {
-          body: { imageUrl: formData.image_url },
-        }
+    // Tentar encontrar categoria correspondente
+    if (data.productData?.category) {
+      const matchedCategory = categories.find(
+        cat => cat.name.toLowerCase().includes(data.productData!.category!.toLowerCase()) ||
+               data.productData!.category!.toLowerCase().includes(cat.name.toLowerCase())
       );
-
-      if (error) throw error;
-
-      if (data?.success && data?.data) {
-        const aiData = data.data;
-        
-        // Encontrar categoria correspondente
-        const matchedCategory = categories.find(
-          cat => cat.name.toLowerCase().includes(aiData.category.toLowerCase()) ||
-                 aiData.category.toLowerCase().includes(cat.name.toLowerCase())
-        );
-
-        setFormData({
-          ...formData,
-          name: aiData.name || formData.name,
-          description: aiData.description || formData.description,
-          price: aiData.suggestedPrice?.toString() || formData.price,
-          colors: aiData.colors?.join(", ") || formData.colors,
-          sizes: aiData.sizes?.join(", ") || formData.sizes,
-          category_id: matchedCategory?.id || formData.category_id,
-        });
-
-        toast({
-          title: "✨ Análise concluída!",
-          description: "Campos preenchidos com informações da IA",
-        });
+      if (matchedCategory) {
+        setFormData(prev => ({ ...prev, category_id: matchedCategory.id }));
       }
-    } catch (error) {
-      console.error("Erro ao analisar imagem:", error);
-      toast({
-        title: "Erro ao analisar imagem",
-        description: "Tente novamente ou preencha manualmente",
-        variant: "destructive",
-      });
-    } finally {
-      setAnalyzingImage(false);
     }
   };
 
@@ -379,58 +349,12 @@ const Products = () => {
                   <p className="text-xs text-muted-foreground mt-1">Separar por vírgula</p>
                 </div>
                 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="image_url">URL da Imagem Principal *</Label>
-                    {formData.image_url && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={analyzeImageWithAI}
-                        disabled={analyzingImage}
-                        className="gap-2"
-                      >
-                        {analyzingImage ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Analisando...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-4 w-4" />
-                            Analisar com IA
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                  <Input
-                    id="image_url"
-                    value={formData.image_url}
-                    onChange={(e) => handleImageUrlChange(e.target.value)}
-                    placeholder="https://exemplo.com/imagem.jpg"
+                {/* Image Upload with AI */}
+                <div className="p-4 bg-primary/5 rounded-lg border-2 border-primary/20">
+                  <ImageUploadWithAI
+                    onImageAnalyzed={handleImageAnalyzed}
+                    currentImageUrl={formData.image_url}
                   />
-                  {imagePreview && (
-                    <div className="relative w-full aspect-square max-w-xs mx-auto rounded-lg overflow-hidden border-2 border-border">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                        onError={() => {
-                          setImagePreview("");
-                          toast({
-                            title: "Erro ao carregar imagem",
-                            description: "Verifique se a URL está correta",
-                            variant: "destructive",
-                          });
-                        }}
-                      />
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    💡 Cole a URL da imagem e clique em "Analisar com IA" para autopreenchimento
-                  </p>
                 </div>
 
                 <div>
