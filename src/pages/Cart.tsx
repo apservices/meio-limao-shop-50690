@@ -11,7 +11,20 @@ import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 
 const Cart = () => {
-  const { items, updateQuantity, removeItem, totalPrice, applyCoupon, removeCoupon, couponCode, discount } = useCart();
+  const cart = useCart();
+  const { items, updateQuantity, removeItem, totalPrice } = cart;
+  const applyCoupon = cart.applyCoupon || (async () => ({ success: false, message: 'Função não disponível' }));
+  const removeCoupon = cart.removeCoupon || (() => {});
+  const couponCode = cart.couponCode || null;
+  const discount = cart.discount || 0;
+  
+  console.log('🛒 Cart Debug:', { 
+    hasApplyCoupon: !!cart.applyCoupon, 
+    hasRemoveCoupon: !!cart.removeCoupon,
+    couponCode,
+    discount 
+  });
+  
   const { toast } = useToast();
   const [couponInput, setCouponInput] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
@@ -148,8 +161,11 @@ const Cart = () => {
               <h2 className="text-xl font-serif font-semibold mb-6">Resumo do Pedido</h2>
               
               {/* Coupon Section */}
-              <div className="mb-6 pb-6 border-b">
-                <Label className="text-sm font-medium mb-2 block">Cupom de Desconto</Label>
+              <div className="mb-6 pb-6 border-b bg-accent/5 p-4 rounded-lg">
+                <Label className="text-sm font-bold mb-3 block flex items-center gap-2">
+                  <Tag className="h-4 w-4" />
+                  Cupom de Desconto
+                </Label>
                 {!couponCode ? (
                   <div className="flex gap-2">
                     <Input
