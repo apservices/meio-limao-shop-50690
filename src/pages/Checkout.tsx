@@ -1,17 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { useCart } from "@/contexts/CartContext";
-import { CreditCard, Loader2, Smartphone, Truck } from "lucide-react";
+import { CreditCard, Loader2, Smartphone, Truck, Gift } from "lucide-react";
 import { checkoutSchema } from "@/lib/validations";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { CepInput } from "@/components/CepInput";
 
 type ShippingOption = {
   id: string;
@@ -86,11 +89,70 @@ const Checkout = () => {
     neighborhood: "",
     city: "",
     state: "",
+    useDifferentShippingAddress: false,
+    shippingCep: "",
+    shippingStreet: "",
+    shippingNumber: "",
+    shippingComplement: "",
+    shippingNeighborhood: "",
+    shippingCity: "",
+    shippingState: "",
+    isGift: false,
+    giftMessage: "",
     cardNumber: "",
     cardName: "",
     cardCvv: "",
     cardExpiry: "",
   });
+
+  // Load user data when logged in
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (customer) {
+          setFormData(prev => ({
+            ...prev,
+            name: customer.name || "",
+            email: customer.email || "",
+            phone: customer.phone || "",
+            cpf: customer.document || "",
+          }));
+        }
+
+        const { data: addresses } = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('customer_id', customer?.id)
+          .eq('is_default', true)
+          .maybeSingle();
+
+        if (addresses) {
+          setFormData(prev => ({
+            ...prev,
+            street: addresses.street,
+            number: addresses.number,
+            complement: addresses.complement || "",
+            neighborhood: addresses.district,
+            city: addresses.city,
+            state: addresses.state,
+          }));
+          setCep(addresses.zipcode);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+
+    loadUserData();
+  }, [user]);
 
   const ensureCustomerRecord = async (
     userId: string,
@@ -232,6 +294,13 @@ const Checkout = () => {
         ...formData,
         cep,
         paymentMethod,
+        shippingCep: formData.useDifferentShippingAddress ? formData.shippingCep : cep,
+        shippingStreet: formData.useDifferentShippingAddress ? formData.shippingStreet : formData.street,
+        shippingNumber: formData.useDifferentShippingAddress ? formData.shippingNumber : formData.number,
+        shippingComplement: formData.useDifferentShippingAddress ? formData.shippingComplement : formData.complement,
+        shippingNeighborhood: formData.useDifferentShippingAddress ? formData.shippingNeighborhood : formData.neighborhood,
+        shippingCity: formData.useDifferentShippingAddress ? formData.shippingCity : formData.city,
+        shippingState: formData.useDifferentShippingAddress ? formData.shippingState : formData.state,
       });
 
       if (!selectedShippingOption) {
@@ -269,7 +338,7 @@ const Checkout = () => {
         subtotal: totalPrice,
       }, { actorId: currentActorId });
 
-      const shippingAddress = {
+      const billingAddress = {
         name: validatedData.name,
         phone: validatedData.phone,
         zipcode: validatedData.cep,
@@ -280,6 +349,24 @@ const Checkout = () => {
         city: validatedData.city,
         state: validatedData.state,
         country: 'BR' as const,
+        address_type: 'billing' as const,
+      };
+
+      const shippingAddress = formData.useDifferentShippingAddress ? {
+        name: validatedData.name,
+        phone: validatedData.phone,
+        zipcode: validatedData.shippingCep || validatedData.cep,
+        street: validatedData.shippingStreet || validatedData.street,
+        number: validatedData.shippingNumber || validatedData.number,
+        complement: validatedData.shippingComplement || null,
+        district: validatedData.shippingNeighborhood || validatedData.neighborhood,
+        city: validatedData.shippingCity || validatedData.city,
+        state: validatedData.shippingState || validatedData.state,
+        country: 'BR' as const,
+        address_type: 'shipping' as const,
+      } : {
+        ...billingAddress,
+        address_type: 'both' as const,
       };
 
       const customerId = await ensureCustomerRecord(user.id, {
@@ -326,13 +413,16 @@ const Checkout = () => {
         shipping_option_id: selectedShippingOption.id,
       }, { actorId: currentActorId, entityId: orderData.id });
 
+      const addressInserts = formData.useDifferentShippingAddress 
+        ? [
+            { ...billingAddress, order_id: orderData.id, type: 'billing' },
+            { ...shippingAddress, order_id: orderData.id, type: 'shipping' },
+          ]
+        : [{ ...shippingAddress, order_id: orderData.id, type: 'both' }];
+
       const { error: orderAddressError } = await supabase
         .from('order_addresses')
-        .insert({
-          ...shippingAddress,
-          order_id: orderData.id,
-          type: 'shipping',
-        });
+        .insert(addressInserts);
 
       if (orderAddressError) throw orderAddressError;
 
@@ -517,23 +607,28 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Endereço */}
+            {/* Endereço de Cobrança */}
             <div className="bg-card rounded-2xl p-6 shadow-sm border">
-              <h2 className="text-xl font-serif font-semibold mb-4">Endereço de Entrega</h2>
+              <h2 className="text-xl font-serif font-semibold mb-4">Endereço de Cobrança</h2>
               <div className="space-y-4">
                 <div className="grid md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="cep">CEP</Label>
-                    <Input
-                      id="cep"
+                  <div className="md:col-span-3">
+                    <CepInput
                       value={cep}
-                      onChange={(e) => handleCepChange(e.target.value)}
-                      maxLength={8}
-                      required
+                      onChange={(value) => handleCepChange(value)}
+                      onAddressFound={(address) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          street: address.street,
+                          neighborhood: address.neighborhood,
+                          city: address.city,
+                          state: address.state,
+                        }));
+                      }}
                     />
                   </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="street">Rua</Label>
+                  <div className="md:col-span-3">
+                    <Label htmlFor="street">Rua *</Label>
                     <Input 
                       id="street" 
                       value={formData.street}
@@ -544,7 +639,7 @@ const Checkout = () => {
                 </div>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="number">Número</Label>
+                    <Label htmlFor="number">Número *</Label>
                     <Input 
                       id="number"
                       value={formData.number}
@@ -558,12 +653,13 @@ const Checkout = () => {
                       id="complement"
                       value={formData.complement}
                       onChange={(e) => setFormData({...formData, complement: e.target.value})}
+                      placeholder="Apto, Bloco, etc."
                     />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="neighborhood">Bairro</Label>
+                    <Label htmlFor="neighborhood">Bairro *</Label>
                     <Input 
                       id="neighborhood"
                       value={formData.neighborhood}
@@ -572,7 +668,7 @@ const Checkout = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="city">Cidade</Label>
+                    <Label htmlFor="city">Cidade *</Label>
                     <Input 
                       id="city"
                       value={formData.city}
@@ -581,15 +677,111 @@ const Checkout = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="state">Estado</Label>
+                    <Label htmlFor="state">Estado (UF) *</Label>
                     <Input 
                       id="state"
                       value={formData.state}
                       onChange={(e) => setFormData({...formData, state: e.target.value.toUpperCase()})}
                       maxLength={2}
+                      placeholder="SP"
                       required 
                     />
                   </div>
+                </div>
+                
+                {/* Endereço de Entrega Diferente */}
+                <div className="pt-4 border-t space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="different-address"
+                      checked={formData.useDifferentShippingAddress}
+                      onCheckedChange={(checked) => 
+                        setFormData({...formData, useDifferentShippingAddress: checked as boolean})
+                      }
+                    />
+                    <Label htmlFor="different-address" className="cursor-pointer">
+                      Entregar em endereço diferente
+                    </Label>
+                  </div>
+
+                  {formData.useDifferentShippingAddress && (
+                    <div className="space-y-4 pl-6 border-l-2">
+                      <h3 className="font-semibold text-sm">Endereço de Entrega</h3>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div className="md:col-span-3">
+                          <CepInput
+                            value={formData.shippingCep}
+                            onChange={(value) => setFormData({...formData, shippingCep: value})}
+                            onAddressFound={(address) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                shippingStreet: address.street,
+                                shippingNeighborhood: address.neighborhood,
+                                shippingCity: address.city,
+                                shippingState: address.state,
+                              }));
+                            }}
+                          />
+                        </div>
+                        <div className="md:col-span-3">
+                          <Label htmlFor="shipping-street">Rua *</Label>
+                          <Input 
+                            id="shipping-street" 
+                            value={formData.shippingStreet}
+                            onChange={(e) => setFormData({...formData, shippingStreet: e.target.value})}
+                            required={formData.useDifferentShippingAddress}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="shipping-number">Número *</Label>
+                          <Input 
+                            id="shipping-number"
+                            value={formData.shippingNumber}
+                            onChange={(e) => setFormData({...formData, shippingNumber: e.target.value})}
+                            required={formData.useDifferentShippingAddress}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Label htmlFor="shipping-complement">Complemento</Label>
+                          <Input 
+                            id="shipping-complement"
+                            value={formData.shippingComplement}
+                            onChange={(e) => setFormData({...formData, shippingComplement: e.target.value})}
+                            placeholder="Apto, Bloco, etc."
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="shipping-neighborhood">Bairro *</Label>
+                          <Input 
+                            id="shipping-neighborhood"
+                            value={formData.shippingNeighborhood}
+                            onChange={(e) => setFormData({...formData, shippingNeighborhood: e.target.value})}
+                            required={formData.useDifferentShippingAddress}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="shipping-city">Cidade *</Label>
+                          <Input 
+                            id="shipping-city"
+                            value={formData.shippingCity}
+                            onChange={(e) => setFormData({...formData, shippingCity: e.target.value})}
+                            required={formData.useDifferentShippingAddress}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="shipping-state">Estado (UF) *</Label>
+                          <Input 
+                            id="shipping-state"
+                            value={formData.shippingState}
+                            onChange={(e) => setFormData({...formData, shippingState: e.target.value.toUpperCase()})}
+                            maxLength={2}
+                            placeholder="SP"
+                            required={formData.useDifferentShippingAddress}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="pt-6 border-t">
                   <div className="flex items-center gap-2 mb-4">
@@ -643,6 +835,46 @@ const Checkout = () => {
                     <p className="text-sm text-muted-foreground">Aguarde enquanto buscamos as opções de frete...</p>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Opção de Presente */}
+            <div className="bg-card rounded-2xl p-6 shadow-sm border">
+              <div className="flex items-center gap-3 mb-4">
+                <Gift className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-serif font-semibold">É um presente?</h2>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="is-gift"
+                    checked={formData.isGift}
+                    onCheckedChange={(checked) => 
+                      setFormData({...formData, isGift: checked as boolean})
+                    }
+                  />
+                  <Label htmlFor="is-gift" className="cursor-pointer">
+                    Esta compra é um presente
+                  </Label>
+                </div>
+
+                {formData.isGift && (
+                  <div>
+                    <Label htmlFor="gift-message">Mensagem do presente (opcional)</Label>
+                    <Textarea
+                      id="gift-message"
+                      value={formData.giftMessage}
+                      onChange={(e) => setFormData({...formData, giftMessage: e.target.value})}
+                      placeholder="Escreva uma mensagem especial para quem vai receber..."
+                      maxLength={500}
+                      rows={4}
+                      className="resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formData.giftMessage.length}/500 caracteres
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

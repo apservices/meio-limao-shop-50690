@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       addresses: {
         Row: {
+          address_type: string | null
           city: string
           complement: string | null
           country: string | null
@@ -26,6 +27,7 @@ export type Database = {
           is_default: boolean | null
           label: string | null
           name: string
+          notes: string | null
           number: string
           phone: string | null
           state: string
@@ -34,6 +36,7 @@ export type Database = {
           zipcode: string
         }
         Insert: {
+          address_type?: string | null
           city: string
           complement?: string | null
           country?: string | null
@@ -44,6 +47,7 @@ export type Database = {
           is_default?: boolean | null
           label?: string | null
           name: string
+          notes?: string | null
           number: string
           phone?: string | null
           state: string
@@ -52,6 +56,7 @@ export type Database = {
           zipcode: string
         }
         Update: {
+          address_type?: string | null
           city?: string
           complement?: string | null
           country?: string | null
@@ -62,6 +67,7 @@ export type Database = {
           is_default?: boolean | null
           label?: string | null
           name?: string
+          notes?: string | null
           number?: string
           phone?: string | null
           state?: string
@@ -387,9 +393,11 @@ export type Database = {
       }
       customers: {
         Row: {
+          birth_date: string | null
           created_at: string | null
           document: string | null
           email: string
+          gender: string | null
           id: string
           marketing_opt_in: boolean | null
           name: string | null
@@ -398,9 +406,11 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          birth_date?: string | null
           created_at?: string | null
           document?: string | null
           email: string
+          gender?: string | null
           id?: string
           marketing_opt_in?: boolean | null
           name?: string | null
@@ -409,9 +419,11 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          birth_date?: string | null
           created_at?: string | null
           document?: string | null
           email?: string
+          gender?: string | null
           id?: string
           marketing_opt_in?: boolean | null
           name?: string | null
@@ -585,7 +597,9 @@ export type Database = {
           customer_id: string | null
           discount_cents: number | null
           email: string | null
+          gift_message: string | null
           id: string
+          is_gift: boolean | null
           notes: string | null
           order_number: number
           payment_method: string | null
@@ -606,7 +620,9 @@ export type Database = {
           customer_id?: string | null
           discount_cents?: number | null
           email?: string | null
+          gift_message?: string | null
           id?: string
+          is_gift?: boolean | null
           notes?: string | null
           order_number?: number
           payment_method?: string | null
@@ -627,7 +643,9 @@ export type Database = {
           customer_id?: string | null
           discount_cents?: number | null
           email?: string | null
+          gift_message?: string | null
           id?: string
+          is_gift?: boolean | null
           notes?: string | null
           order_number?: number
           payment_method?: string | null

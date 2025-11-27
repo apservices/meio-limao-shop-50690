@@ -75,7 +75,7 @@ export const checkoutSchema = z.object({
     .refine(validateCPF, "CPF inválido")
     .transform(val => val.replace(/\D/g, "")),
   
-  // Endereço
+  // Endereço de Cobrança
   cep: z
     .string()
     .trim()
@@ -117,6 +117,73 @@ export const checkoutSchema = z.object({
     .trim()
     .length(2, "Estado deve ter 2 caracteres")
     .toUpperCase(),
+  
+  // Endereço de Entrega (opcional - usar o mesmo se não preenchido)
+  useDifferentShippingAddress: z.boolean().default(false),
+  
+  shippingCep: z
+    .string()
+    .trim()
+    .regex(/^\d{8}$/, "CEP deve ter 8 dígitos")
+    .transform(val => val.replace(/\D/g, ""))
+    .optional()
+    .or(z.literal("")),
+  
+  shippingStreet: z
+    .string()
+    .trim()
+    .min(3, "Rua deve ter no mínimo 3 caracteres")
+    .max(200, "Rua muito longa")
+    .optional()
+    .or(z.literal("")),
+  
+  shippingNumber: z
+    .string()
+    .trim()
+    .min(1, "Número é obrigatório")
+    .max(10, "Número muito longo")
+    .optional()
+    .or(z.literal("")),
+  
+  shippingComplement: z
+    .string()
+    .trim()
+    .max(100, "Complemento muito longo")
+    .optional()
+    .or(z.literal("")),
+  
+  shippingNeighborhood: z
+    .string()
+    .trim()
+    .min(2, "Bairro deve ter no mínimo 2 caracteres")
+    .max(100, "Bairro muito longo")
+    .optional()
+    .or(z.literal("")),
+  
+  shippingCity: z
+    .string()
+    .trim()
+    .min(2, "Cidade deve ter no mínimo 2 caracteres")
+    .max(100, "Cidade muito longa")
+    .optional()
+    .or(z.literal("")),
+  
+  shippingState: z
+    .string()
+    .trim()
+    .length(2, "Estado deve ter 2 caracteres")
+    .toUpperCase()
+    .optional()
+    .or(z.literal("")),
+  
+  // Opção de presente
+  isGift: z.boolean().default(false),
+  giftMessage: z
+    .string()
+    .trim()
+    .max(500, "Mensagem muito longa")
+    .optional()
+    .or(z.literal("")),
   
   // Pagamento (condicional - apenas se for cartão)
   paymentMethod: z.enum(["pix", "credit"]),
