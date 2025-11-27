@@ -27,6 +27,10 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
+  applyCoupon: (code: string) => Promise<{ success: boolean; message: string; discount?: number }>;
+  removeCoupon: () => void;
+  couponCode: string | null;
+  discount: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -38,6 +42,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [hasHydratedRemote, setHasHydratedRemote] = useState(false);
+  const [couponCode, setCouponCode] = useState<string | null>(null);
+  const [discount, setDiscount] = useState(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -353,11 +359,105 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const clearCart = () => setItems([]);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPrice = Math.max(0, subtotal - discount);
+
+  const applyCoupon = async (code: string): Promise<{ success: boolean; message: string; discount?: number }> => {
+    try {
+      const { data: coupon, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', code.toUpperCase())
+        .eq('is_active', true)
+        .single();
+
+      if (error || !coupon) {
+        return { success: false, message: 'Cupom inválido ou expirado' };
+      }
+
+      // Check validity dates
+      const now = new Date();
+      if (coupon.starts_at && new Date(coupon.starts_at) > now) {
+        return { success: false, message: 'Cupom ainda não está válido' };
+      }
+      if (coupon.ends_at && new Date(coupon.ends_at) < now) {
+        return { success: false, message: 'Cupom expirado' };
+      }
+
+      // Check max uses
+      if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
+        return { success: false, message: 'Cupom esgotado' };
+      }
+
+      // Check minimum subtotal
+      const minSubtotal = coupon.min_subtotal_cents ? coupon.min_subtotal_cents / 100 : 0;
+      if (subtotal < minSubtotal) {
+        return { 
+          success: false, 
+          message: `Valor mínimo de R$ ${minSubtotal.toFixed(2)} não atingido` 
+        };
+      }
+
+      // Calculate discount
+      let discountAmount = 0;
+      if (coupon.type === 'percentage') {
+        discountAmount = (subtotal * coupon.value) / 100;
+      } else if (coupon.type === 'fixed') {
+        discountAmount = coupon.value;
+      }
+
+      setCouponCode(code.toUpperCase());
+      setDiscount(discountAmount);
+
+      // Update cart in Supabase
+      if (cartId) {
+        await supabase
+          .from('carts')
+          .update({ 
+            coupon_code: code.toUpperCase(),
+            discount_cents: Math.round(discountAmount * 100)
+          })
+          .eq('id', cartId);
+      }
+
+      return { 
+        success: true, 
+        message: 'Cupom aplicado com sucesso!',
+        discount: discountAmount
+      };
+    } catch (error) {
+      console.error('Error applying coupon:', error);
+      return { success: false, message: 'Erro ao aplicar cupom' };
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponCode(null);
+    setDiscount(0);
+    
+    if (cartId) {
+      supabase
+        .from('carts')
+        .update({ coupon_code: null, discount_cents: 0 })
+        .eq('id', cartId);
+    }
+  };
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, removeItem, updateQuantity, clearCart, totalItems, totalPrice }}
+      value={{ 
+        items, 
+        addItem, 
+        removeItem, 
+        updateQuantity, 
+        clearCart, 
+        totalItems, 
+        totalPrice,
+        applyCoupon,
+        removeCoupon,
+        couponCode,
+        discount,
+      }}
     >
       {children}
     </CartContext.Provider>

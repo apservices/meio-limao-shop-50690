@@ -1,16 +1,54 @@
 import { Link } from "react-router-dom";
-import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingBag, Tag, X } from "lucide-react";
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
 
 const Cart = () => {
-  const { items, updateQuantity, removeItem, totalPrice } = useCart();
+  const { items, updateQuantity, removeItem, totalPrice, applyCoupon, removeCoupon, couponCode, discount } = useCart();
+  const { toast } = useToast();
+  const [couponInput, setCouponInput] = useState("");
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shippingEstimate = 15.90;
   const finalTotal = totalPrice + shippingEstimate;
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    
+    setIsApplyingCoupon(true);
+    const result = await applyCoupon(couponInput);
+    setIsApplyingCoupon(false);
+
+    if (result.success) {
+      toast({
+        title: "Cupom aplicado!",
+        description: `Desconto de R$ ${result.discount?.toFixed(2).replace(".", ",")} aplicado`,
+      });
+      setCouponInput("");
+    } else {
+      toast({
+        title: "Erro ao aplicar cupom",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    removeCoupon();
+    toast({
+      title: "Cupom removido",
+      description: "O desconto foi removido do seu carrinho",
+    });
+  };
 
   if (items.length === 0) {
     return (
@@ -109,11 +147,58 @@ const Cart = () => {
             <div className="bg-card rounded-2xl p-6 shadow-sm border sticky top-24">
               <h2 className="text-xl font-serif font-semibold mb-6">Resumo do Pedido</h2>
               
+              {/* Coupon Section */}
+              <div className="mb-6 pb-6 border-b">
+                <Label className="text-sm font-medium mb-2 block">Cupom de Desconto</Label>
+                {!couponCode ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Digite o cupom"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={handleApplyCoupon}
+                      disabled={isApplyingCoupon || !couponInput.trim()}
+                      size="sm"
+                    >
+                      <Tag className="h-4 w-4 mr-1" />
+                      Aplicar
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                        {couponCode}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveCoupon}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>R$ {totalPrice.toFixed(2).replace(".", ",")}</span>
+                  <span>R$ {subtotal.toFixed(2).replace(".", ",")}</span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                    <span>Desconto</span>
+                    <span>- R$ {discount.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete estimado</span>
                   <span>R$ {shippingEstimate.toFixed(2).replace(".", ",")}</span>
