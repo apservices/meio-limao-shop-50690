@@ -10,6 +10,7 @@ import ProductImageZoom from "@/components/ProductImageZoom";
 import ProductSchema from "@/components/ProductSchema";
 import ShippingCalculator from "@/components/ShippingCalculator";
 import SizeGuide from "@/components/SizeGuide";
+import { ProductRecommendations } from "@/components/ProductRecommendations";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Star, Heart, ShoppingBag, Truck, RefreshCw, MessageCircle, Package } from "lucide-react";
 import { toast } from "sonner";
 import { useProductQuery } from "@/hooks/useProductsQuery";
@@ -36,6 +38,7 @@ const ProductDetail = () => {
   const [selectedColor, setSelectedColor] = useState<string>("");
   const { addItem } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
+  const { user } = useAuth();
 
   if (isLoading) {
     return (
@@ -309,8 +312,8 @@ const ProductDetail = () => {
             </Tabs>
           </div>
 
-          {/* Related Products */}
-          {relatedProducts.length > 0 && (
+          {/* Related Products - Personalized */}
+          {relatedProducts.length > 0 ? (
             <section className="py-8">
               <h2 className="text-2xl md:text-3xl font-bold mb-6">Você também pode gostar</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -318,6 +321,14 @@ const ProductDetail = () => {
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
+            </section>
+          ) : (
+            <section className="py-8">
+              <ProductRecommendations 
+                userId={user?.id}
+                currentProductId={id}
+                limit={8}
+              />
             </section>
           )}
         </div>
