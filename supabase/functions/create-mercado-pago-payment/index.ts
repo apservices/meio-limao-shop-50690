@@ -11,11 +11,14 @@ const jsonHeaders = {
 };
 
 serve(async (req) => {
+  console.log("[MP Payment] Function invoked");
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== "POST") {
+    console.error("[MP Payment] Invalid method:", req.method);
     return new Response(
       JSON.stringify({ error: "Method not allowed" }),
       { status: 405, headers: jsonHeaders },
@@ -23,7 +26,11 @@ serve(async (req) => {
   }
 
   const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+  console.log("[MP Payment] Token present:", !!MP_ACCESS_TOKEN);
+  console.log("[MP Payment] Token starts with:", MP_ACCESS_TOKEN?.substring(0, 10));
+  
   if (!MP_ACCESS_TOKEN) {
+    console.error("[MP Payment] MP_ACCESS_TOKEN not configured");
     return new Response(
       JSON.stringify({ error: "MP_ACCESS_TOKEN não configurado" }),
       { status: 500, headers: jsonHeaders },
@@ -41,8 +48,10 @@ serve(async (req) => {
   }
 
   const { orderId, items, payer, shippingAddress, shippingOption } = body;
+  console.log("[MP Payment] Request data:", { orderId, itemsCount: items?.length, hasPayer: !!payer });
 
   if (!orderId || !items || !Array.isArray(items) || items.length === 0) {
+    console.error("[MP Payment] Invalid request data");
     return new Response(
       JSON.stringify({ error: "orderId e items são obrigatórios" }),
       { status: 400, headers: jsonHeaders },
@@ -92,6 +101,9 @@ serve(async (req) => {
     };
   }
 
+  console.log("[MP Payment] Sending request to Mercado Pago API");
+  console.log("[MP Payment] Preference payload:", JSON.stringify(preferencePayload, null, 2));
+  
   const mpRes = await fetch(
     "https://api.mercadopago.com/checkout/preferences",
     {
@@ -105,15 +117,19 @@ serve(async (req) => {
   );
 
   const data = await mpRes.json();
+  console.log("[MP Payment] Mercado Pago response status:", mpRes.status);
+  console.log("[MP Payment] Mercado Pago response:", JSON.stringify(data, null, 2));
 
   if (!mpRes.ok) {
-    console.error("Mercado Pago error:", data);
+    console.error("[MP Payment] Mercado Pago error:", data);
     return new Response(
       JSON.stringify({ error: "Erro ao criar preferência no Mercado Pago", details: data }),
       { status: 500, headers: jsonHeaders },
     );
   }
 
+  console.log("[MP Payment] Success - Preference created:", data.id);
+  
   return new Response(
     JSON.stringify({
       preference_id: data.id,
