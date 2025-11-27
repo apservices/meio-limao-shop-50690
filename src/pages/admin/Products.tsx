@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Edit } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit, Sparkles } from "lucide-react";
 import { ImageUploadWithAI } from "@/components/admin/ImageUploadWithAI";
 import {
   Table,
@@ -252,17 +252,30 @@ const Products = () => {
                   {editingProduct ? "Editar Produto" : "Novo Produto"}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Nome do Produto *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                    placeholder="Ex: Vestido Longo Solar"
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Image Upload with AI - DESTAQUE NO TOPO */}
+                <div className="p-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border-2 border-primary/30 shadow-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold text-foreground">Upload de Imagem com IA</h3>
+                  </div>
+                  <ImageUploadWithAI
+                    onImageAnalyzed={handleImageAnalyzed}
+                    currentImageUrl={formData.image_url}
                   />
                 </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Nome do Produto *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                      placeholder="Ex: Vestido Longo Solar"
+                    />
+                  </div>
                 
                 <div>
                   <Label htmlFor="description">Descrição *</Label>
@@ -348,14 +361,6 @@ const Products = () => {
                   />
                   <p className="text-xs text-muted-foreground mt-1">Separar por vírgula</p>
                 </div>
-                
-                {/* Image Upload with AI */}
-                <div className="p-4 bg-primary/5 rounded-lg border-2 border-primary/20">
-                  <ImageUploadWithAI
-                    onImageAnalyzed={handleImageAnalyzed}
-                    currentImageUrl={formData.image_url}
-                  />
-                </div>
 
                 <div>
                   <Label htmlFor="images">Galeria de Imagens Adicionais</Label>
@@ -402,6 +407,7 @@ const Products = () => {
                     />
                     <span className="text-sm">Ativo (visível na loja)</span>
                   </label>
+                </div>
                 </div>
                 
                 <Button type="submit" disabled={loading} className="w-full">
