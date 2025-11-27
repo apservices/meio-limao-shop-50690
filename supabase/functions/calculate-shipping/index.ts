@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 const MELHOR_ENVIO_TOKEN = Deno.env.get("MELHOR_ENVIO_TOKEN");
 const MELHOR_ENVIO_SANDBOX =
   (Deno.env.get("MELHOR_ENVIO_SANDBOX") || "")
@@ -170,8 +175,13 @@ const formatDeliveryTime = (
 
 serve(async (req) => {
   const jsonHeaders = {
+    ...corsHeaders,
     "Content-Type": "application/json; charset=utf-8",
   };
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   if (req.method !== "POST") {
     return new Response(
