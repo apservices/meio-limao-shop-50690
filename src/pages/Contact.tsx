@@ -203,7 +203,7 @@ const Contact = () => {
                           Respondemos em até 24h
                         </p>
                         <p className="text-sm font-medium text-primary mt-1">
-                          contato@meiolimao.com.br
+                          contato@meiolimao.shop
                         </p>
                       </div>
                     </div>
