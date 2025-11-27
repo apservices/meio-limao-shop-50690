@@ -363,7 +363,6 @@ const Checkout = () => {
         order_id: orderData.id,
         product_id: item.id,
         name_snapshot: item.name,
-        size_snapshot: item.selectedSize,
         qty: item.quantity,
         unit_price_cents: Math.round(item.price * 100),
       }));
