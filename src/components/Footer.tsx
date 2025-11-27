@@ -91,7 +91,7 @@ const Footer = () => {
               </li>
               <li>
                 <a
-                  href="https://wa.me/5511999999999"
+                  href="https://wa.me/5511973500848"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors"
@@ -105,7 +105,7 @@ const Footer = () => {
 
         <div className="border-t pt-8 text-center text-sm text-muted-foreground">
           <p>© {new Date().getFullYear()} Meio Limão. Todos os direitos reservados.</p>
-          <p className="mt-2">CNPJ: 00.000.000/0001-00 | contato@meiolimao.com.br</p>
+          <p className="mt-2">CNPJ: 07.704.241/0001-60 | contato@meiolimao.com.br</p>
         </div>
       </div>
     </footer>

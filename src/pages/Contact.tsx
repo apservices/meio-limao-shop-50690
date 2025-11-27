@@ -174,7 +174,7 @@ const Contact = () => {
                   </h2>
                   <div className="space-y-6">
                     <a
-                      href="https://wa.me/5511999999999"
+                      href="https://wa.me/5511973500848"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-start gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors group"
@@ -188,7 +188,7 @@ const Contact = () => {
                           Atendimento rápido e direto
                         </p>
                         <p className="text-sm font-medium text-primary mt-1">
-                          (11) 99999-9999
+                          (11) 97350-0848
                         </p>
                       </div>
                     </a>
