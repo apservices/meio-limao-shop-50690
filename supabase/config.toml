@@ -1,5 +1,8 @@
 project_id = "dkojbzxixkgawfhggkmy"
 
+[functions.calculate-shipping]
+verify_jwt = false
+
 [functions.mercado-pago-webhook]
 verify_jwt = false
 [functions.create-mp-preference]
