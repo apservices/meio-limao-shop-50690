@@ -1,4 +1,3 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const jsonHeaders = {
@@ -16,18 +15,17 @@ serve(async (req) => {
   const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN");
   if (!MP_ACCESS_TOKEN) {
     return new Response(
-      JSON.stringify({ error: "MP_ACCESS_TOKEN não configurado" }),
+      JSON.stringify({ error: "MP_ACCESS_TOKEN nÃ£o configurado" }),
       { status: 500, headers: jsonHeaders },
     );
   }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any;
   try {
     body = await req.json();
   } catch {
     return new Response(
-      JSON.stringify({ error: "JSON inválido" }),
+      JSON.stringify({ error: "JSON invÃ¡lido" }),
       { status: 400, headers: jsonHeaders },
     );
   }
@@ -36,15 +34,13 @@ serve(async (req) => {
 
   if (!orderId || !items || !Array.isArray(items) || items.length === 0) {
     return new Response(
-      JSON.stringify({ error: "orderId e items são obrigatórios" }),
+      JSON.stringify({ error: "orderId e items sÃ£o obrigatÃ³rios" }),
       { status: 400, headers: jsonHeaders },
     );
   }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
   const preferencePayload: any = {
     external_reference: String(orderId),
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
     items: items.map((item: any) => ({
       title: item.title,
       quantity: item.quantity,
@@ -103,7 +99,7 @@ serve(async (req) => {
   if (!mpRes.ok) {
     console.error("Mercado Pago error:", data);
     return new Response(
-      JSON.stringify({ error: "Erro ao criar preferência no Mercado Pago", details: data }),
+      JSON.stringify({ error: "Erro ao criar preferÃªncia no Mercado Pago", details: data }),
       { status: 500, headers: jsonHeaders },
     );
   }
