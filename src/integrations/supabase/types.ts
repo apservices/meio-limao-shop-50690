@@ -340,6 +340,7 @@ export type Database = {
           created_at: string | null
           ends_at: string | null
           first_purchase_only: boolean | null
+          free_shipping: boolean | null
           id: string
           is_active: boolean | null
           max_uses: number | null
@@ -355,6 +356,7 @@ export type Database = {
           created_at?: string | null
           ends_at?: string | null
           first_purchase_only?: boolean | null
+          free_shipping?: boolean | null
           id?: string
           is_active?: boolean | null
           max_uses?: number | null
@@ -370,6 +372,7 @@ export type Database = {
           created_at?: string | null
           ends_at?: string | null
           first_purchase_only?: boolean | null
+          free_shipping?: boolean | null
           id?: string
           is_active?: boolean | null
           max_uses?: number | null

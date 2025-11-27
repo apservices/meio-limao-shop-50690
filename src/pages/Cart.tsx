@@ -17,6 +17,7 @@ const Cart = () => {
   const removeCoupon = cart.removeCoupon || (() => {});
   const couponCode = cart.couponCode || null;
   const discount = cart.discount || 0;
+  const hasFreeShipping = cart.hasFreeShipping || false;
   
   const { toast } = useToast();
   const [couponInput, setCouponInput] = useState("");
@@ -24,7 +25,8 @@ const Cart = () => {
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shippingEstimate = 15.90;
-  const finalTotal = totalPrice + shippingEstimate;
+  const shippingCost = hasFreeShipping ? 0 : shippingEstimate;
+  const finalTotal = totalPrice + shippingCost;
 
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
@@ -166,7 +168,11 @@ const Cart = () => {
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete estimado</span>
-                  <span>R$ {shippingEstimate.toFixed(2).replace(".", ",")}</span>
+                  {hasFreeShipping ? (
+                    <span className="text-green-600 dark:text-green-400 font-semibold">GRÁTIS</span>
+                  ) : (
+                    <span>R$ {shippingEstimate.toFixed(2).replace(".", ",")}</span>
+                  )}
                 </div>
                 <div className="border-t pt-3">
                   <div className="flex justify-between font-semibold text-lg">

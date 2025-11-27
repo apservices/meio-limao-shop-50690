@@ -31,6 +31,7 @@ interface CartContextType {
   removeCoupon: () => void;
   couponCode: string | null;
   discount: number;
+  hasFreeShipping: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -44,6 +45,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [hasHydratedRemote, setHasHydratedRemote] = useState(false);
   const [couponCode, setCouponCode] = useState<string | null>(null);
   const [discount, setDiscount] = useState(0);
+  const [hasFreeShipping, setHasFreeShipping] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -408,6 +410,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       setCouponCode(code.toUpperCase());
       setDiscount(discountAmount);
+      setHasFreeShipping(coupon.free_shipping || false);
 
       // Update cart in Supabase
       if (cartId) {
@@ -420,9 +423,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           .eq('id', cartId);
       }
 
+      let message = 'Cupom aplicado com sucesso!';
+      if (coupon.free_shipping) {
+        message = 'Cupom aplicado! Você ganhou frete grátis! 🎉';
+      }
+
       return { 
         success: true, 
-        message: 'Cupom aplicado com sucesso!',
+        message,
         discount: discountAmount
       };
     } catch (error) {
@@ -434,6 +442,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const removeCoupon = () => {
     setCouponCode(null);
     setDiscount(0);
+    setHasFreeShipping(false);
     
     if (cartId) {
       supabase
@@ -457,6 +466,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         removeCoupon,
         couponCode,
         discount,
+        hasFreeShipping,
       }}
     >
       {children}
