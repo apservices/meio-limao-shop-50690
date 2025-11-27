@@ -18,13 +18,6 @@ const Cart = () => {
   const couponCode = cart.couponCode || null;
   const discount = cart.discount || 0;
   
-  console.log('🛒 Cart Debug:', { 
-    hasApplyCoupon: !!cart.applyCoupon, 
-    hasRemoveCoupon: !!cart.removeCoupon,
-    couponCode,
-    discount 
-  });
-  
   const { toast } = useToast();
   const [couponInput, setCouponInput] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
@@ -160,8 +153,42 @@ const Cart = () => {
             <div className="bg-card rounded-2xl p-6 shadow-sm border sticky top-24">
               <h2 className="text-xl font-serif font-semibold mb-6">Resumo do Pedido</h2>
               
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>R$ {subtotal.toFixed(2).replace(".", ",")}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                    <span>Desconto</span>
+                    <span>- R$ {discount.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Frete estimado</span>
+                  <span>R$ {shippingEstimate.toFixed(2).replace(".", ",")}</span>
+                </div>
+                <div className="border-t pt-3">
+                  <div className="flex justify-between font-semibold text-lg">
+                    <span>Total</span>
+                    <span>R$ {finalTotal.toFixed(2).replace(".", ",")}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ou até 6x de R$ {(finalTotal / 6).toFixed(2).replace(".", ",")} com juros
+                  </p>
+                </div>
+              </div>
+              
+              <Button size="lg" className="w-full mb-3" asChild>
+                <Link to="/checkout">Finalizar Compra</Link>
+              </Button>
+              
+              <Button variant="outline" size="lg" className="w-full mb-6" asChild>
+                <Link to="/shop">Continuar Comprando</Link>
+              </Button>
+
               {/* Coupon Section */}
-              <div className="mb-6 pb-6 border-b bg-accent/5 p-4 rounded-lg">
+              <div className="pt-6 border-t bg-accent/5 p-4 rounded-lg">
                 <Label className="text-sm font-bold mb-3 block flex items-center gap-2">
                   <Tag className="h-4 w-4" />
                   Cupom de Desconto
@@ -203,40 +230,6 @@ const Cart = () => {
                   </div>
                 )}
               </div>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>R$ {subtotal.toFixed(2).replace(".", ",")}</span>
-                </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-                    <span>Desconto</span>
-                    <span>- R$ {discount.toFixed(2).replace(".", ",")}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Frete estimado</span>
-                  <span>R$ {shippingEstimate.toFixed(2).replace(".", ",")}</span>
-                </div>
-                <div className="border-t pt-3">
-                  <div className="flex justify-between font-semibold text-lg">
-                    <span>Total</span>
-                    <span>R$ {finalTotal.toFixed(2).replace(".", ",")}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ou até 6x de R$ {(finalTotal / 6).toFixed(2).replace(".", ",")} com juros
-                  </p>
-                </div>
-              </div>
-              
-              <Button size="lg" className="w-full mb-3" asChild>
-                <Link to="/checkout">Finalizar Compra</Link>
-              </Button>
-              
-              <Button variant="outline" size="lg" className="w-full" asChild>
-                <Link to="/shop">Continuar Comprando</Link>
-              </Button>
             </div>
           </div>
         </div>
