@@ -316,18 +316,31 @@ const Checkout = () => {
         return;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      // Garante que sempre há um usuário autenticado (anônimo ou não)
+      let { data: { user } } = await supabase.auth.getUser();
 
       if (!user?.id) {
-        toast({
-          title: "Faça login",
-          description: "Entre na sua conta para finalizar o pedido.",
-          variant: "destructive",
-        });
-        await logCheckoutEvent('checkout_missing_user', {
+        // Cria usuário anônimo automaticamente para guests
+        const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+        
+        if (anonError || !anonData.user) {
+          toast({
+            title: "Erro ao processar pedido",
+            description: "Não foi possível iniciar o checkout. Tente novamente.",
+            variant: "destructive",
+          });
+          await logCheckoutEvent('checkout_anonymous_auth_failed', {
+            email: validatedData.email,
+            error: anonError?.message,
+          });
+          return;
+        }
+
+        user = anonData.user;
+        await logCheckoutEvent('checkout_anonymous_user_created', {
+          userId: user.id,
           email: validatedData.email,
         });
-        return;
       }
 
       currentActorId = user.id;
