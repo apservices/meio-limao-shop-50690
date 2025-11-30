@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, ShoppingCart, Users, TrendingUp, Package, Eye, MousePointerClick, Target } from "lucide-react";
+import { DollarSign, ShoppingCart, Users, TrendingUp, Package, Eye, MousePointerClick, Target, CalendarIcon } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import {
   LineChart,
@@ -22,6 +22,11 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format, subDays, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Stats {
   totalRevenue: number;
@@ -91,13 +96,61 @@ const Reports = () => {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [recentJourney, setRecentJourney] = useState<CustomerJourneyEvent[]>([]);
   const [funnelData, setFunnelData] = useState<any[]>([]);
+  
+  // Date filter states
+  const [dateFilter, setDateFilter] = useState<string>("last7days");
+  const [startDate, setStartDate] = useState<Date | undefined>(subDays(new Date(), 6));
+  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
 
   useEffect(() => {
     loadReports();
-  }, []);
+  }, [startDate, endDate]);
+
+  const handlePresetChange = (value: string) => {
+    setDateFilter(value);
+    const now = new Date();
+    
+    switch (value) {
+      case "last7days":
+        setStartDate(subDays(now, 6));
+        setEndDate(now);
+        break;
+      case "last30days":
+        setStartDate(subDays(now, 29));
+        setEndDate(now);
+        break;
+      case "thisMonth":
+        setStartDate(startOfMonth(now));
+        setEndDate(endOfMonth(now));
+        break;
+      case "lastMonth":
+        const lastMonth = subDays(startOfMonth(now), 1);
+        setStartDate(startOfMonth(lastMonth));
+        setEndDate(endOfMonth(lastMonth));
+        break;
+      case "thisYear":
+        setStartDate(startOfYear(now));
+        setEndDate(endOfYear(now));
+        break;
+      case "custom":
+        // Keep current dates
+        break;
+      default:
+        setStartDate(subDays(now, 6));
+        setEndDate(now);
+    }
+  };
 
   const loadReports = async () => {
     setLoading(true);
+
+    if (!startDate || !endDate) {
+      setLoading(false);
+      return;
+    }
+
+    const startDateStr = format(startDate, "yyyy-MM-dd'T'00:00:00");
+    const endDateStr = format(endDate, "yyyy-MM-dd'T'23:59:59");
 
     const [
       ordersResult,
@@ -108,12 +161,16 @@ const Reports = () => {
       supabase
         .from("orders")
         .select("total_cents, created_at")
-        .eq("payment_status", "paid"),
+        .eq("payment_status", "paid")
+        .gte("created_at", startDateStr)
+        .lte("created_at", endDateStr),
       supabase.from("customers").select("*", { count: "exact", head: true }),
       supabase.from("products").select("*", { count: "exact", head: true }),
       supabase
         .from("customer_events")
         .select("event_type, event_data, created_at, customer_id")
+        .gte("created_at", startDateStr)
+        .lte("created_at", endDateStr)
         .order("created_at", { ascending: false }),
     ]);
 
@@ -201,15 +258,16 @@ const Reports = () => {
     ];
     setFunnelData(funnelSteps);
 
-    // Generate sales data for last 7 days
-    if (orders) {
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - (6 - i));
+    // Generate sales data for selected date range
+    if (orders && startDate && endDate) {
+      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const daysArray = Array.from({ length: daysDiff }, (_, i) => {
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + i);
         return date.toISOString().split("T")[0];
       });
 
-      const salesByDay = last7Days.map((date) => {
+      const salesByDay = daysArray.map((date) => {
         const dayOrders = orders.filter((order) =>
           order.created_at.startsWith(date)
         );
@@ -281,7 +339,98 @@ const Reports = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold">Relatórios e Análises</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-bold">Relatórios e Análises</h2>
+        </div>
+
+        {/* Date Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Filtros de Período</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Período Pré-definido</label>
+                <Select value={dateFilter} onValueChange={handlePresetChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="last7days">Últimos 7 dias</SelectItem>
+                    <SelectItem value="last30days">Últimos 30 dias</SelectItem>
+                    <SelectItem value="thisMonth">Mês atual</SelectItem>
+                    <SelectItem value="lastMonth">Mês passado</SelectItem>
+                    <SelectItem value="thisYear">Este ano</SelectItem>
+                    <SelectItem value="custom">Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Data Inicial</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "dd/MM/yyyy") : <span>Selecione</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={(date) => {
+                        setStartDate(date);
+                        setDateFilter("custom");
+                      }}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Data Final</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "dd/MM/yyyy") : <span>Selecione</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={(date) => {
+                        setEndDate(date);
+                        setDateFilter("custom");
+                      }}
+                      disabled={(date) => date > new Date() || (startDate ? date < startDate : false)}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {loading ? (
           <div className="text-center py-12">
@@ -412,7 +561,10 @@ const Reports = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Vendas nos Últimos 7 Dias</CardTitle>
+                <CardTitle>Vendas no Período Selecionado</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {startDate && endDate && `${format(startDate, "dd/MM/yyyy")} - ${format(endDate, "dd/MM/yyyy")}`}
+                </p>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
