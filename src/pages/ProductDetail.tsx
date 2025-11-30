@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { Star, Heart, ShoppingBag, Truck, RefreshCw, MessageCircle, Package } from "lucide-react";
 import { toast } from "sonner";
 import { useProductQuery } from "@/hooks/useProductsQuery";
@@ -39,6 +40,14 @@ const ProductDetail = () => {
   const { addItem } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
   const { user } = useAuth();
+  const { trackProductView, trackAddToCart } = useAnalytics();
+
+  // Track product view
+  useEffect(() => {
+    if (product) {
+      trackProductView(product.id, product.name);
+    }
+  }, [product]);
 
   if (isLoading) {
     return (
@@ -92,6 +101,7 @@ const ProductDetail = () => {
       return;
     }
     addItem(product, selectedSize, selectedColor, 1);
+    trackAddToCart(product.id, 1, product.price);
     toast.success("Produto adicionado ao carrinho!");
   };
 

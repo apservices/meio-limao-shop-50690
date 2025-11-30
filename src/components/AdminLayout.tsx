@@ -30,6 +30,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { path: "/admin/orders", icon: ShoppingCart, label: "Pedidos" },
     { path: "/admin/coupons", icon: Tag, label: "Cupons" },
     { path: "/admin/customers", icon: Users, label: "Clientes" },
+    { path: "/admin/insights", icon: BarChart3, label: "Insights" },
     { path: "/admin/reports", icon: BarChart3, label: "Relatórios" },
   ];
 
