@@ -27,30 +27,30 @@ const BrandStory = () => {
   ];
 
   return (
-    <section className="py-20 md:py-32 bg-gradient-to-b from-background via-secondary/5 to-background">
+    <section className="py-16 md:py-24 bg-gradient-to-b from-background via-secondary/5 to-background">
       <div className="container mx-auto px-4">
         {/* Main Story */}
-        <div className="max-w-4xl mx-auto text-center mb-20">
-          <p className="text-primary font-medium uppercase tracking-wider mb-4 text-sm">
+        <div className="max-w-3xl mx-auto text-center mb-16">
+          <p className="text-primary/80 font-light uppercase tracking-wider mb-3 text-xs">
             Nossa Essência
           </p>
-          <h2 className="font-serif text-4xl md:text-6xl font-bold mb-8 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+          <h2 className="font-serif text-2xl md:text-3xl font-semibold mb-6 text-foreground/90">
             A Mulher Meio Limão
           </h2>
-          <div className="space-y-6 text-lg md:text-xl text-muted-foreground leading-relaxed">
+          <div className="space-y-4 text-sm md:text-base text-muted-foreground/90 leading-relaxed">
             <p className="font-light">
-              <span className="font-serif text-2xl text-foreground italic">Ela floresce vivendo.</span> Abraça o sol, dança com a brisa, celebra cada momento com leveza e autenticidade.
+              <span className="font-serif text-lg md:text-xl text-foreground/80 italic">Ela floresce vivendo.</span> Abraça o sol, dança com a brisa, celebra cada momento com leveza e autenticidade.
             </p>
-            <p>
+            <p className="font-light">
               A mulher Meio Limão carrega o frescor dos trópicos em seu estilo — peças leves que acompanham sua jornada com elegância natural, tecidos que respiram, cores que vibram.
             </p>
-            <p className="text-foreground font-medium">
+            <p className="text-foreground/70 font-light">
               Mais que roupas, criamos uma experiência de liberdade, conforto e sofisticação tropical.
             </p>
           </div>
-          <div className="mt-12">
+          <div className="mt-8">
             <Link to="/about">
-              <Button size="lg" variant="outline" className="group">
+              <Button size="default" variant="ghost" className="group text-muted-foreground hover:text-primary">
                 Conheça Nossa História
                 <Sparkles className="ml-2 h-4 w-4 group-hover:rotate-12 transition-transform" />
               </Button>
