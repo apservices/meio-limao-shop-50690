@@ -32,7 +32,7 @@ const ExchangePolicy = () => {
 
           <h3 className="text-lg font-semibold mb-3">Como Solicitar</h3>
           <ol className="list-decimal pl-6 mb-6 space-y-2 text-muted-foreground">
-            <li>Entre em contato pelo WhatsApp (11) 99999-9999</li>
+            <li>Entre em contato pelo WhatsApp (11) 97350-0848</li>
             <li>Informe o número do pedido e motivo da troca</li>
             <li>Nossa equipe enviará as instruções de postagem</li>
             <li>Após recebermos o produto, processaremos a troca em até 5 dias úteis</li>
