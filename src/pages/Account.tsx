@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Package, Heart, User, MapPin, Gift } from "lucide-react";
+import { Package, Heart, User, MapPin, Gift, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -581,16 +581,32 @@ const Account = () => {
           </TabsContent>
 
           <TabsContent value="profile" id="profile">
-            <div className="bg-card rounded-2xl p-6 shadow-sm border">
-              <h2 className="text-xl font-serif font-semibold mb-6">Dados Pessoais</h2>
+            <div className="space-y-6">
+              <div className="bg-card rounded-2xl p-6 shadow-sm border">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <div>
+                      <h3 className="font-semibold">Segurança da Conta</h3>
+                      <p className="text-sm text-muted-foreground">Configure autenticação de dois fatores</p>
+                    </div>
+                  </div>
+                  <Button asChild variant="outline">
+                    <Link to="/conta/seguranca">Configurar 2FA</Link>
+                  </Button>
+                </div>
+              </div>
 
-              <form
-                className="space-y-4"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  profileMutation.mutate(profileForm);
-                }}
-              >
+              <div className="bg-card rounded-2xl p-6 shadow-sm border">
+                <h2 className="text-xl font-serif font-semibold mb-6">Dados Pessoais</h2>
+
+                <form
+                  className="space-y-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    profileMutation.mutate(profileForm);
+                  }}
+                >
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="profile-name">Nome Completo</Label>
@@ -660,6 +676,7 @@ const Account = () => {
                   Salvar alterações
                 </Button>
               </form>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
