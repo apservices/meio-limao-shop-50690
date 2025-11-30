@@ -17,13 +17,13 @@ const InstagramFeed = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-serif font-semibold mb-4">
-            @meiolimao
+            @lojameiolimao
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
             Inspire-se com nossos looks e compartilhe seu estilo marcando a gente
           </p>
           <Button variant="outline" size="lg" asChild>
-            <a href="https://instagram.com/meiolimao" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.instagram.com/lojameiolimao/" target="_blank" rel="noopener noreferrer">
               <Instagram className="mr-2 h-5 w-5" />
               Seguir no Instagram
             </a>
@@ -34,7 +34,7 @@ const InstagramFeed = () => {
           {posts.map((post) => (
             <a
               key={post.id}
-              href="https://instagram.com/meiolimao"
+              href="https://www.instagram.com/lojameiolimao/"
               target="_blank"
               rel="noopener noreferrer"
               className="aspect-square overflow-hidden rounded-lg group relative"
