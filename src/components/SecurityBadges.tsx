@@ -4,23 +4,23 @@ const SecurityBadges = () => {
   const badges = [
     {
       icon: Shield,
-      title: "Site Seguro",
-      description: "Certificado SSL/TLS Ativo"
+      title: "SSL/TLS Ativo",
+      description: "Conexão Criptografada"
     },
     {
       icon: Lock,
-      title: "Dados Protegidos",
-      description: "Criptografia de Ponta a Ponta"
-    },
-    {
-      icon: CreditCard,
-      title: "Pagamento Seguro",
-      description: "Processamento PCI Compliant"
+      title: "RLS com Isolamento Total",
+      description: "Dados Protegidos e Isolados"
     },
     {
       icon: CheckCircle2,
-      title: "Compra Garantida",
-      description: "100% Seguro e Protegido"
+      title: "Logs Protegidos",
+      description: "Auditoria Completa"
+    },
+    {
+      icon: CreditCard,
+      title: "PCI DSS Compliant",
+      description: "Pagamentos 100% Seguros"
     }
   ];
 

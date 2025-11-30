@@ -91,7 +91,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link to="/seguranca" className="text-muted-foreground hover:text-primary transition-colors">
-                  Segurança e Certificados
+                  Segurança e Proteção de Dados
                 </Link>
               </li>
               <li>
