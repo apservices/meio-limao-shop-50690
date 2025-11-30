@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { totalItems } = useCart();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
 
   const initials = user?.email ? user.email.charAt(0).toUpperCase() : "";
 
@@ -107,6 +107,11 @@ const Navbar = () => {
                   <DropdownMenuItem asChild>
                     <Link to="/account">Minha conta</Link>
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/dashboard">Admin</Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => signOut()}>Sair</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

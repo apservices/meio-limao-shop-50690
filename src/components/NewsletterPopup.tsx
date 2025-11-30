@@ -81,8 +81,10 @@ const NewsletterPopup = () => {
         </button>
         
         <div className="text-center space-y-4 py-6">
-          <div className="text-5xl mb-2">🍋</div>
-          <h2 className="text-2xl font-serif font-semibold">Bem-vinda ao 1/2 Limão</h2>
+          <div className="flex justify-center mb-4">
+            <img src="/icon-192.png" alt="Meio Limão" className="h-20 w-20" />
+          </div>
+          <h2 className="text-2xl font-serif font-semibold">Bem-vinda ao Meio Limão</h2>
           <p className="text-muted-foreground">
             Cadastre-se e ganhe <span className="font-semibold text-primary">10% OFF</span> na primeira compra
           </p>
