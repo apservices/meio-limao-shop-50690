@@ -42,10 +42,10 @@ const ProductDetailInfo = ({
     <div className="space-y-8">
       {/* Category & Title */}
       <div>
-        <p className="text-primary font-medium uppercase tracking-wider mb-2 text-sm">
+        <p className="text-primary font-medium uppercase tracking-wider mb-2 text-xs md:text-sm">
           {product.category ?? "Moda"}
         </p>
-        <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4 leading-tight">
+        <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold mb-4 leading-tight">
           {product.name}
         </h1>
         
@@ -85,20 +85,20 @@ const ProductDetailInfo = ({
       {/* Pricing */}
       <div>
         <div className="flex items-baseline gap-3 mb-2">
-          <span className="text-4xl font-bold text-foreground">
+          <span className="text-2xl md:text-3xl font-bold text-foreground">
             R$ {product.price.toFixed(2).replace(".", ",")}
           </span>
           {product.originalPrice && (
-            <span className="text-xl text-muted-foreground line-through">
+            <span className="text-lg md:text-xl text-muted-foreground line-through font-light">
               R$ {product.originalPrice.toFixed(2).replace(".", ",")}
             </span>
           )}
         </div>
-        <p className="text-muted-foreground">
+        <p className="text-sm md:text-base text-muted-foreground">
           ou <span className="font-semibold text-foreground">3x de R$ {(product.price / 3).toFixed(2).replace(".", ",")}</span> sem juros
         </p>
-        <p className="text-sm text-muted-foreground mt-1">
-          ou até <span className="font-semibold">6x de R$ {(product.price / 6).toFixed(2).replace(".", ",")}</span> com juros
+        <p className="text-xs md:text-sm text-muted-foreground mt-1">
+          ou até <span className="font-medium">6x de R$ {(product.price / 6).toFixed(2).replace(".", ",")}</span> com juros
         </p>
       </div>
 

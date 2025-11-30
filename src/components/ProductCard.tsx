@@ -96,27 +96,27 @@ const ProductCard = ({ product, className }: ProductCardProps) => {
       </Link>
 
       {/* Product Info */}
-      <div className="p-4">
-        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+      <div className="p-3 md:p-4 space-y-1.5">
+        <p className="text-[10px] md:text-xs text-muted-foreground uppercase tracking-wider font-light">
           {category ?? "Moda"}
         </p>
         <Link to={`/produto/${id}`}>
-          <h3 className="font-medium text-foreground mb-2 hover:text-primary transition-colors line-clamp-2">
+          <h3 className="text-sm md:text-base font-normal text-foreground hover:text-primary transition-colors line-clamp-2 leading-snug min-h-[2.5rem]">
             {name}
           </h3>
         </Link>
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-foreground">
+        <div className="flex items-baseline gap-2 pt-1">
+          <span className="text-base md:text-lg font-semibold text-foreground">
             R$ {price.toFixed(2).replace(".", ",")}
           </span>
           {originalPrice && (
-            <span className="text-sm text-muted-foreground line-through">
+            <span className="text-xs text-muted-foreground line-through font-light">
               R$ {originalPrice.toFixed(2).replace(".", ",")}
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          ou 3x de R$ {(price / 3).toFixed(2).replace(".", ",")} sem juros
+        <p className="text-[10px] md:text-xs text-muted-foreground font-light">
+          ou 3x de R$ {(price / 3).toFixed(2).replace(".", ",")}
         </p>
       </div>
     </div>
