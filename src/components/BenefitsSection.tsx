@@ -1,4 +1,4 @@
-import { Truck, RefreshCw, ShieldCheck, CreditCard } from "lucide-react";
+import { Truck, Award, ShieldCheck, CreditCard } from "lucide-react";
 
 const benefits = [
   {
@@ -7,9 +7,9 @@ const benefits = [
     description: "Entrega em todo Brasil",
   },
   {
-    icon: RefreshCw,
-    title: "Troca Fácil",
-    description: "30 dias para trocar",
+    icon: Award,
+    title: "Qualidade Garantida",
+    description: "Produtos selecionados",
   },
   {
     icon: ShieldCheck,
