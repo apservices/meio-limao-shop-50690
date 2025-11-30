@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Instagram, Facebook, Mail } from "lucide-react";
+import { Instagram, Facebook, Mail, Shield, Lock, CheckCircle2, CreditCard } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -105,6 +105,47 @@ const Footer = () => {
                 </a>
               </li>
             </ul>
+          </div>
+        </div>
+
+        {/* Certificações e Selos de Segurança */}
+        <div className="border-t pt-8 pb-8">
+          <div className="text-center mb-6">
+            <h3 className="font-serif font-semibold text-lg mb-2">Ambiente 100% Seguro</h3>
+            <p className="text-sm text-muted-foreground">Suas informações protegidas com os mais altos padrões de segurança</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/30">
+              <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center mb-3">
+                <Lock className="h-6 w-6 text-green-600" />
+              </div>
+              <h4 className="font-semibold text-sm mb-1">SSL Certificado</h4>
+              <p className="text-xs text-muted-foreground">Criptografia de ponta a ponta</p>
+            </div>
+
+            <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/30">
+              <div className="h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-3">
+                <Shield className="h-6 w-6 text-blue-600" />
+              </div>
+              <h4 className="font-semibold text-sm mb-1">Site Seguro</h4>
+              <p className="text-xs text-muted-foreground">Proteção contra fraudes</p>
+            </div>
+
+            <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/30">
+              <div className="h-12 w-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-3">
+                <CreditCard className="h-6 w-6 text-purple-600" />
+              </div>
+              <h4 className="font-semibold text-sm mb-1">PCI Compliance</h4>
+              <p className="text-xs text-muted-foreground">Pagamento seguro</p>
+            </div>
+
+            <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/30">
+              <div className="h-12 w-12 rounded-full bg-orange-500/10 flex items-center justify-center mb-3">
+                <CheckCircle2 className="h-6 w-6 text-orange-600" />
+              </div>
+              <h4 className="font-semibold text-sm mb-1">Dados Protegidos</h4>
+              <p className="text-xs text-muted-foreground">LGPD em conformidade</p>
+            </div>
           </div>
         </div>
 
