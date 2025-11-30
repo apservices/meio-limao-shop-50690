@@ -22,13 +22,16 @@ const About = () => {
         {/* Hero Section with Elegant Background */}
         <section className="relative h-[70vh] min-h-[600px] overflow-hidden">
           {/* Background with gradient and pattern */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/30 to-accent/20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-secondary/40 to-accent/30" />
           <div 
             className="absolute inset-0 opacity-10"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
             }}
           />
+          
+          {/* Dark overlay for better contrast */}
+          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/30 to-background/80" />
           
           {/* Content */}
           <div className="container mx-auto px-4 h-full flex items-center justify-center relative z-10">
@@ -37,24 +40,24 @@ const About = () => {
                 <img 
                   src="/icon-192.png" 
                   alt="Meio Limão" 
-                  className="h-24 w-24 mx-auto mb-4 animate-scale-in"
+                  className="h-24 w-24 mx-auto mb-4 animate-scale-in drop-shadow-2xl"
                 />
               </div>
-              <h1 className="font-serif text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+              <h1 className="font-serif text-5xl md:text-7xl font-bold mb-6 text-foreground drop-shadow-lg">
                 Meio Limão
               </h1>
-              <p className="text-xl md:text-2xl text-foreground/90 mb-4 font-light">
+              <p className="text-xl md:text-2xl text-foreground mb-4 font-light drop-shadow-md">
                 Mais que moda, um estilo de vida
               </p>
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-lg md:text-xl text-foreground/80 max-w-2xl mx-auto drop-shadow-sm">
                 Estilo tropical chic com elegância natural que celebra a essência feminina brasileira
               </p>
               
               {/* Decorative elements */}
               <div className="mt-8 flex items-center justify-center gap-4">
-                <div className="h-px w-16 bg-gradient-to-r from-transparent to-primary" />
-                <Sparkles className="h-5 w-5 text-primary" />
-                <div className="h-px w-16 bg-gradient-to-l from-transparent to-primary" />
+                <div className="h-px w-16 bg-gradient-to-r from-transparent to-foreground/30" />
+                <Sparkles className="h-5 w-5 text-foreground/70" />
+                <div className="h-px w-16 bg-gradient-to-l from-transparent to-foreground/30" />
               </div>
             </div>
           </div>
@@ -78,26 +81,26 @@ const About = () => {
               </div>
               
               <div className="space-y-8 text-lg leading-relaxed">
-                <div className="p-8 rounded-2xl bg-card/50 backdrop-blur-sm border border-primary/10 shadow-lg hover:shadow-xl transition-shadow">
-                  <p className="text-foreground/90">
-                    A <strong className="text-primary">Meio Limão</strong> nasceu do sonho de criar uma moda que celebra a
+                <div className="p-8 rounded-2xl bg-card border border-primary/30 shadow-lg hover:shadow-xl transition-shadow">
+                  <p className="text-foreground">
+                    A <strong className="text-primary font-bold">Meio Limão</strong> nasceu do sonho de criar uma moda que celebra a
                     brasilidade com sofisticação. Inspirada nas cores vibrantes e na
                     leveza do nosso clima tropical, cada peça é pensada para a mulher
                     moderna que busca conforto sem abrir mão do estilo.
                   </p>
                 </div>
                 
-                <div className="p-8 rounded-2xl bg-card/50 backdrop-blur-sm border border-secondary/10 shadow-lg hover:shadow-xl transition-shadow">
-                  <p className="text-foreground/90">
-                    Nossa essência está no <strong className="text-secondary">equilíbrio perfeito</strong> entre o natural e o
+                <div className="p-8 rounded-2xl bg-card border border-secondary/30 shadow-lg hover:shadow-xl transition-shadow">
+                  <p className="text-foreground">
+                    Nossa essência está no <strong className="text-secondary font-bold">equilíbrio perfeito</strong> entre o natural e o
                     elegante, onde tecidos leves encontram modelagens impecáveis, e
                     cores suaves conversam com estampas autorais.
                   </p>
                 </div>
                 
-                <div className="p-8 rounded-2xl bg-card/50 backdrop-blur-sm border border-accent/10 shadow-lg hover:shadow-xl transition-shadow">
-                  <p className="text-foreground/90">
-                    Acreditamos que a moda deve ser uma <strong className="text-accent">extensão da sua personalidade</strong>,
+                <div className="p-8 rounded-2xl bg-card border border-accent/30 shadow-lg hover:shadow-xl transition-shadow">
+                  <p className="text-foreground">
+                    Acreditamos que a moda deve ser uma <strong className="text-accent font-bold">extensão da sua personalidade</strong>,
                     por isso trabalhamos com coleções versáteis que transitam do dia
                     para a noite com facilidade e charme.
                   </p>
@@ -132,39 +135,39 @@ const About = () => {
             </div>
             
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              <div className="group text-center space-y-6 p-8 rounded-2xl bg-card/80 backdrop-blur-sm border border-primary/20 hover:border-primary/40 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary group-hover:scale-110 transition-transform">
+              <div className="group text-center space-y-6 p-8 rounded-2xl bg-card border border-primary/40 hover:border-primary/60 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/20 text-primary group-hover:scale-110 transition-transform">
                   <Heart className="h-10 w-10" />
                 </div>
                 <div>
                   <h3 className="font-serif text-2xl font-bold mb-3">Autenticidade</h3>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-foreground/80 leading-relaxed">
                     Peças únicas que celebram a essência feminina brasileira com
                     design autoral e exclusivo que reflete sua personalidade.
                   </p>
                 </div>
               </div>
               
-              <div className="group text-center space-y-6 p-8 rounded-2xl bg-card/80 backdrop-blur-sm border border-secondary/20 hover:border-secondary/40 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-secondary/20 to-secondary/5 text-secondary group-hover:scale-110 transition-transform">
+              <div className="group text-center space-y-6 p-8 rounded-2xl bg-card border border-secondary/40 hover:border-secondary/60 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-secondary/20 text-secondary group-hover:scale-110 transition-transform">
                   <Leaf className="h-10 w-10" />
                 </div>
                 <div>
                   <h3 className="font-serif text-2xl font-bold mb-3">Sustentabilidade</h3>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-foreground/80 leading-relaxed">
                     Comprometimento com tecidos naturais e processos conscientes que
                     respeitam o meio ambiente e as futuras gerações.
                   </p>
                 </div>
               </div>
               
-              <div className="group text-center space-y-6 p-8 rounded-2xl bg-card/80 backdrop-blur-sm border border-accent/20 hover:border-accent/40 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-accent/20 to-accent/5 text-accent group-hover:scale-110 transition-transform">
+              <div className="group text-center space-y-6 p-8 rounded-2xl bg-card border border-accent/40 hover:border-accent/60 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-accent/20 text-accent group-hover:scale-110 transition-transform">
                   <Sparkles className="h-10 w-10" />
                 </div>
                 <div>
                   <h3 className="font-serif text-2xl font-bold mb-3">Qualidade</h3>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-foreground/80 leading-relaxed">
                     Cada detalhe é pensado com cuidado, desde a escolha dos materiais
                     até o acabamento final, garantindo excelência em cada peça.
                   </p>
@@ -179,18 +182,18 @@ const About = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background" />
           <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-4xl mx-auto">
-              <div className="text-center p-12 md:p-16 rounded-3xl bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 border border-primary/20 shadow-2xl">
-                <span className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+              <div className="text-center p-12 md:p-16 rounded-3xl bg-card border border-primary/40 shadow-2xl">
+                <span className="inline-block px-4 py-2 rounded-full bg-primary/20 text-primary text-sm font-medium mb-6">
                   Nosso Propósito
                 </span>
                 <h2 className="font-serif text-4xl md:text-5xl font-bold mb-8">
                   Nossa Missão
                 </h2>
-                <p className="text-xl md:text-2xl text-foreground/90 leading-relaxed mb-8">
-                  Criar uma moda <strong className="text-primary">atemporal</strong> que valoriza a mulher brasileira,
-                  combinando <strong className="text-secondary">conforto</strong>, <strong className="text-accent">elegância</strong> e consciência.
+                <p className="text-xl md:text-2xl text-foreground leading-relaxed mb-8">
+                  Criar uma moda <strong className="text-primary font-bold">atemporal</strong> que valoriza a mulher brasileira,
+                  combinando <strong className="text-secondary font-bold">conforto</strong>, <strong className="text-accent font-bold">elegância</strong> e consciência.
                 </p>
-                <p className="text-lg text-muted-foreground leading-relaxed">
+                <p className="text-lg text-foreground/80 leading-relaxed">
                   Queremos que cada cliente se sinta única, confiante e conectada com sua essência ao
                   vestir Meio Limão. Cada peça conta uma história, celebra uma personalidade.
                 </p>
