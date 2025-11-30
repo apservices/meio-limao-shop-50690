@@ -66,7 +66,7 @@ const NewsletterPopup = () => {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-[90vw] sm:max-w-sm p-4 sm:p-6">
         <DialogHeader className="sr-only">
           <DialogTitle>Assine a newsletter Meio Limão</DialogTitle>
           <DialogDescription>
@@ -75,36 +75,36 @@ const NewsletterPopup = () => {
         </DialogHeader>
         <button
           onClick={handleClose}
-          className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 transition-opacity"
+          className="absolute right-3 top-3 rounded-sm opacity-70 hover:opacity-100 transition-opacity"
         >
           <X className="h-4 w-4" />
         </button>
         
-        <div className="text-center space-y-4 py-6">
-          <div className="flex justify-center mb-4">
-            <img src="/icon-192.png" alt="Meio Limão" className="h-20 w-20" />
+        <div className="text-center space-y-3 py-2">
+          <div className="flex justify-center mb-2">
+            <img src="/icon-192.png" alt="Meio Limão" className="h-14 w-14 sm:h-16 sm:w-16" />
           </div>
-          <h2 className="text-2xl font-serif font-semibold">Bem-vinda ao Meio Limão</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-lg sm:text-xl font-serif font-semibold">Bem-vinda ao Meio Limão</h2>
+          <p className="text-sm text-muted-foreground">
             Cadastre-se e ganhe <span className="font-semibold text-primary">10% OFF</span> na primeira compra
           </p>
           
-          <form onSubmit={handleSubmit} className="space-y-3 pt-4">
+          <form onSubmit={handleSubmit} className="space-y-2.5 pt-2">
             <Input
               type="email"
               placeholder="Seu melhor e-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="text-center"
+              className="text-center h-10"
             />
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            <Button type="submit" className="w-full text-sm" size="default" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? "Cadastrando..." : "Quero meu cupom BEMVINDAX"}
+              {loading ? "Cadastrando..." : "Quero meu cupom"}
             </Button>
           </form>
           
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground pt-1">
             Ao se cadastrar você aceita receber novidades e ofertas exclusivas
           </p>
         </div>
