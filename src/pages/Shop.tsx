@@ -216,7 +216,7 @@ const Shop = () => {
             </aside>
 
             {/* Mobile Filter Button */}
-            <div className="lg:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
+            <div className="lg:hidden fixed bottom-28 md:bottom-24 left-1/2 -translate-x-1/2 z-40">
               <Sheet>
                 <SheetTrigger asChild>
                   <Button size="lg" className="rounded-full shadow-lg">

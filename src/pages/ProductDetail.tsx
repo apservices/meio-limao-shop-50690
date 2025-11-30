@@ -142,7 +142,7 @@ const ProductDetail = () => {
                 <p className="text-sm text-muted-foreground uppercase tracking-wide mb-2">
                   {product.category}
                 </p>
-                <h1 className="text-3xl md:text-4xl font-bold mb-4">{product.name}</h1>
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4">{product.name}</h1>
                 
                 {/* Rating */}
                 <div className="flex items-center gap-2 mb-4">
@@ -164,23 +164,23 @@ const ProductDetail = () => {
                 </div>
 
                 {/* Price */}
-                <div className="flex items-baseline gap-3 mb-2">
-                  <span className="text-3xl font-bold">
+                <div className="flex items-baseline gap-2 md:gap-3 mb-2">
+                  <span className="text-2xl md:text-3xl font-bold">
                     R$ {product.price.toFixed(2).replace(".", ",")}
                   </span>
                   {product.originalPrice && (
-                    <span className="text-xl text-muted-foreground line-through">
+                    <span className="text-lg md:text-xl text-muted-foreground line-through">
                       R$ {product.originalPrice.toFixed(2).replace(".", ",")}
                     </span>
                   )}
                 </div>
-                <p className="text-muted-foreground">
+                <p className="text-sm md:text-base text-muted-foreground">
                   ou até 6x de R$ {(product.price / 6).toFixed(2).replace(".", ",")} sem juros
                 </p>
               </div>
 
               {/* Description */}
-              <p className="text-foreground leading-relaxed">
+              <p className="text-sm md:text-base text-foreground leading-relaxed">
                 {product.description ?? "Descrição indisponível no momento."}
               </p>
 
