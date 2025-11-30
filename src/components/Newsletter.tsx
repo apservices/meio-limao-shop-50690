@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import logoIcon from "@/assets/logo-icon.png";
 
 const Newsletter = () => {
   const [email, setEmail] = useState("");
@@ -43,7 +44,7 @@ const Newsletter = () => {
     <section className="py-16 bg-primary/5">
       <div className="container mx-auto px-4">
         <div className="max-w-2xl mx-auto text-center">
-          <div className="text-5xl mb-4">🍋</div>
+          <img src={logoIcon} alt="Meio Limão" className="w-20 h-20 mx-auto mb-4" />
           <h2 className="text-3xl md:text-4xl font-serif font-semibold mb-4">
             Frescor na sua caixa de entrada
           </h2>
