@@ -224,7 +224,7 @@ const Contact = () => {
                     </div>
 
                     <a
-                      href="https://instagram.com/meiolimao"
+                      href="https://www.instagram.com/lojameiolimao/"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-start gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors group"
