@@ -22,13 +22,14 @@ const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       {/* Main Image */}
-      <div className="relative aspect-[3/4] rounded-3xl overflow-hidden bg-muted group">
+      <div className="sticky top-4 relative aspect-[3/4] rounded-3xl overflow-hidden bg-muted group">
         <img
           src={mainImages[currentIndex]}
           alt={`${productName} - Imagem ${currentIndex + 1}`}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover select-none"
+          loading="eager"
         />
         
         {/* Navigation Arrows */}

@@ -196,6 +196,7 @@ const Products = () => {
 
   const handleImageAnalyzed = (data: {
     imageUrl: string;
+    additionalImages?: string[];
     productData?: {
       name?: string;
       description?: string;
@@ -205,9 +206,15 @@ const Products = () => {
       category?: string;
     };
   }) => {
+    // Combinar imagem principal com imagens adicionais
+    const allImages = data.additionalImages && data.additionalImages.length > 0
+      ? [data.imageUrl, ...data.additionalImages].join(', ')
+      : data.imageUrl;
+
     setFormData(prev => ({
       ...prev,
       image_url: data.imageUrl,
+      images: allImages,
       ...(data.productData?.name && { name: data.productData.name }),
       ...(data.productData?.description && { description: data.productData.description }),
       ...(data.productData?.suggestedPrice && { price: data.productData.suggestedPrice.toString() }),
