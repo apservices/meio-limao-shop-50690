@@ -10,10 +10,61 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const accessToken = Deno.env.get('MERCADO_PAGO_ACCESS_TOKEN');
 const webhookSecret = Deno.env.get('MERCADO_PAGO_WEBHOOK_SECRET');
+const ENVIRONMENT = Deno.env.get('ENVIRONMENT') || 'production';
+
+// Rate limiting: max 100 requests per minute per IP
+async function checkRateLimit(supabase: any, identifier: string): Promise<boolean> {
+  const windowStart = new Date(Date.now() - 60 * 1000); // 1 minute
+  const maxRequests = 100;
+  
+  const { data: existingLog } = await supabase
+    .from("rate_limit_log")
+    .select("*")
+    .eq("identifier", identifier)
+    .eq("endpoint", "mercado-pago-webhook")
+    .gte("window_start", windowStart.toISOString())
+    .single();
+
+  if (existingLog) {
+    if (existingLog.request_count >= maxRequests) {
+      return false;
+    }
+    await supabase
+      .from("rate_limit_log")
+      .update({ request_count: existingLog.request_count + 1 })
+      .eq("id", existingLog.id);
+  } else {
+    await supabase
+      .from("rate_limit_log")
+      .insert({
+        identifier,
+        endpoint: "mercado-pago-webhook",
+        request_count: 1,
+        window_start: new Date().toISOString(),
+      });
+  }
+  return true;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting check
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  const clientIP = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+  
+  const allowed = await checkRateLimit(supabase, clientIP);
+  if (!allowed) {
+    console.warn("Rate limit exceeded", { ip: clientIP });
+    return new Response(
+      JSON.stringify({ error: "Too many requests" }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 429,
+      }
+    );
   }
 
   // Verify HMAC signature
@@ -21,7 +72,7 @@ serve(async (req) => {
   const xRequestId = req.headers.get('x-request-id');
   
   if (!xSignature || !xRequestId) {
-    console.warn('Missing required headers: x-signature or x-request-id');
+    console.warn('Invalid signature');
     return new Response(JSON.stringify({ error: 'Missing signature headers' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 401,
@@ -67,14 +118,12 @@ serve(async (req) => {
         .join('');
       
       if (calculatedHash !== hash) {
-        console.warn('Invalid HMAC signature');
+        console.warn('Invalid signature');
         return new Response(JSON.stringify({ error: 'Invalid signature' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 401,
         });
       }
-      
-      console.log('HMAC signature verified successfully');
     } catch (error) {
       console.error('Error verifying signature:', error);
       return new Response(JSON.stringify({ error: 'Signature verification failed' }), {
@@ -102,13 +151,11 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Mercado Pago webhook received:', JSON.stringify(body, null, 2));
+    console.log('Webhook received');
 
     if (!accessToken) {
       throw new Error('MERCADO_PAGO_ACCESS_TOKEN not configured');
     }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const logCheckoutEvent = async (action: string, diff: Record<string, unknown>) => {
       try {
@@ -161,7 +208,10 @@ serve(async (req) => {
     }
 
     const payment = await paymentResponse.json();
-    console.log('Payment details:', JSON.stringify(payment, null, 2));
+    
+    if (ENVIRONMENT === "development") {
+      console.log('Payment details:', JSON.stringify(payment, null, 2));
+    }
 
     const orderId = payment.external_reference;
     const status = payment.status;
@@ -258,6 +308,10 @@ serve(async (req) => {
       paymentStatus,
       orderStatus,
     });
+
+    if (paymentStatus === 'completed') {
+      console.log('Payment approved', { orderId: targetOrderId });
+    }
 
     return new Response(
       JSON.stringify({ success: true }),
