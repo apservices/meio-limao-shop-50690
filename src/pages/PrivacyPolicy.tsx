@@ -80,7 +80,7 @@ const PrivacyPolicy = () => {
           <h2 className="text-xl font-serif font-semibold mb-4">7. Contato</h2>
           <p className="mb-6 text-muted-foreground">
             Para exercer seus direitos ou esclarecer dúvidas sobre nossa política de privacidade, 
-            entre em contato conosco através do e-mail: privacidade@meiolimao.com.br
+            entre em contato conosco através do e-mail: contato@meiolimao.shop
           </p>
 
           <div className="bg-primary/5 p-6 rounded-lg mt-8">
