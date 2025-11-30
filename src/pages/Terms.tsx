@@ -80,8 +80,8 @@ const Terms = () => {
             Para dúvidas sobre estes termos, entre em contato:
           </p>
           <ul className="list-none mb-6 space-y-2 text-muted-foreground">
-            <li>📧 E-mail: contato@meiolimao.com.br</li>
-            <li>📱 WhatsApp: (11) 99999-9999</li>
+            <li>📧 E-mail: contato@meiolimao.shop</li>
+            <li>📱 WhatsApp: (11) 97350-0848</li>
           </ul>
 
           <div className="bg-primary/5 p-6 rounded-lg mt-8">
