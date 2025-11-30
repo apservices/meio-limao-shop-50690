@@ -1152,6 +1152,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_expired_orders: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
