@@ -419,80 +419,98 @@ const Account = () => {
               <div className="text-center py-16 text-muted-foreground">Carregando pedidos...</div>
             ) : orders && orders.length > 0 ? (
               orders.map((order) => (
-                <div key={order.id} className="bg-card rounded-2xl p-6 shadow-sm border space-y-4">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <p className="text-sm text-muted-foreground">
-                          Pedido #{order.order_number ?? order.id.slice(0, 6)}
-                        </p>
-                        {order.is_gift && (
-                          <Badge variant="outline" className="flex items-center gap-1">
-                            <Gift className="h-3 w-3" />
-                            Presente
-                          </Badge>
+                  <div key={order.id} className="bg-card rounded-2xl p-6 shadow-sm border space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <p className="text-sm text-muted-foreground">
+                            Pedido #{order.order_number ?? order.id.slice(0, 6)}
+                          </p>
+                          {order.is_gift && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <Gift className="h-3 w-3" />
+                              Presente
+                            </Badge>
+                          )}
+                        </div>
+                        <h3 className="text-xl font-serif font-semibold">
+                          {formatCurrency.format((order.total_cents ?? Math.round(order.total * 100)) / 100)}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
+                        
+                        {order.is_gift && order.gift_message && (
+                          <div className="mt-3 p-3 bg-accent/20 rounded-lg border">
+                            <p className="text-xs font-medium text-muted-foreground mb-1">Mensagem do presente:</p>
+                            <p className="text-sm italic">"{order.gift_message}"</p>
+                          </div>
+                        )}
+                        
+                        {order.status === 'cancelled' && order.notes && (
+                          <div className="mt-3 p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                            <p className="text-xs font-medium text-destructive mb-1">Motivo do cancelamento:</p>
+                            <p className="text-sm">{order.notes}</p>
+                          </div>
                         )}
                       </div>
-                      <h3 className="text-xl font-serif font-semibold">
-                        {formatCurrency.format((order.total_cents ?? Math.round(order.total * 100)) / 100)}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
-                      
-                      {order.is_gift && order.gift_message && (
-                        <div className="mt-3 p-3 bg-accent/20 rounded-lg border">
-                          <p className="text-xs font-medium text-muted-foreground mb-1">Mensagem do presente:</p>
-                          <p className="text-sm italic">"{order.gift_message}"</p>
-                        </div>
-                      )}
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge 
+                          variant={order.status === 'cancelled' ? 'destructive' : 'secondary'} 
+                          className="w-fit"
+                        >
+                          {order.status === 'cancelled' ? 'Cancelado' : order.status}
+                        </Badge>
+                        <Badge variant="outline" className="w-fit">
+                          {order.payment_status === 'cancelled' ? 'Não efetivado' : order.payment_status}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <Badge variant="secondary" className="w-fit">
-                        {order.status}
-                      </Badge>
-                      <Badge variant="outline" className="w-fit">
-                        {order.payment_status}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  <div className="border-t pt-4">
-                    <h4 className="font-medium text-sm mb-3">Itens do pedido:</h4>
-                    <div className="space-y-2">
-                      {order.order_items?.map((item) => (
-                        <div key={item.id} className="flex items-center gap-3 text-sm">
-                          {item.image_url && (
-                            <img 
-                              src={item.image_url} 
-                              alt={item.name_snapshot} 
-                              className="w-12 h-12 object-cover rounded-lg"
-                            />
-                          )}
-                          <div className="flex-1">
-                            <p className="font-medium">{item.name_snapshot}</p>
-                            {item.sku_snapshot && (
-                              <p className="text-xs text-muted-foreground">SKU: {item.sku_snapshot}</p>
+                    
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium text-sm mb-3">Itens do pedido:</h4>
+                      <div className="space-y-2">
+                        {order.order_items?.map((item) => (
+                          <div key={item.id} className="flex items-center gap-3 text-sm">
+                            {item.image_url && (
+                              <img 
+                                src={item.image_url} 
+                                alt={item.name_snapshot} 
+                                className="w-12 h-12 object-cover rounded-lg"
+                              />
                             )}
+                            <div className="flex-1">
+                              <p className="font-medium">{item.name_snapshot}</p>
+                              {item.sku_snapshot && (
+                                <p className="text-xs text-muted-foreground">SKU: {item.sku_snapshot}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium">
+                                {formatCurrency.format(item.unit_price_cents / 100)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">Qtd: {item.qty}</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-medium">
-                              {formatCurrency.format(item.unit_price_cents / 100)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">Qtd: {item.qty}</p>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  {order.coupon_code && (
-                    <div className="border-t pt-3">
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Cupom aplicado: </span>
-                        <Badge variant="secondary">{order.coupon_code}</Badge>
-                      </p>
-                    </div>
-                  )}
-                </div>
+                    {order.coupon_code && (
+                      <div className="border-t pt-3">
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Cupom aplicado: </span>
+                          <Badge variant="secondary">{order.coupon_code}</Badge>
+                        </p>
+                      </div>
+                    )}
+                    
+                    {order.status === 'cancelled' && (
+                      <div className="border-t pt-4">
+                        <Button asChild className="w-full">
+                          <Link to="/shop">Comprar Novamente</Link>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
               ))
             ) : (
               <div className="text-center py-16">
