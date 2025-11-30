@@ -14,7 +14,7 @@ const corsHeaders = {
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_MAX_REQUESTS = 10;
 
 async function checkRateLimit(supabase: any, identifier: string, endpoint: string): Promise<boolean> {
   const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW);

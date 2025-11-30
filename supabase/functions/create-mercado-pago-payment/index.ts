@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +10,40 @@ const jsonHeaders = {
   ...corsHeaders,
   "Content-Type": "application/json",
 };
+
+// Rate limiting: max 1000 requests per hour per user
+async function checkRateLimit(supabase: any, identifier: string): Promise<boolean> {
+  const windowStart = new Date(Date.now() - 60 * 60 * 1000); // 1 hour
+  const maxRequests = 1000;
+  
+  const { data: existingLog } = await supabase
+    .from("rate_limit_log")
+    .select("*")
+    .eq("identifier", identifier)
+    .eq("endpoint", "create-mercado-pago-payment")
+    .gte("window_start", windowStart.toISOString())
+    .single();
+
+  if (existingLog) {
+    if (existingLog.request_count >= maxRequests) {
+      return false;
+    }
+    await supabase
+      .from("rate_limit_log")
+      .update({ request_count: existingLog.request_count + 1 })
+      .eq("id", existingLog.id);
+  } else {
+    await supabase
+      .from("rate_limit_log")
+      .insert({
+        identifier,
+        endpoint: "create-mercado-pago-payment",
+        request_count: 1,
+        window_start: new Date().toISOString(),
+      });
+  }
+  return true;
+}
 
 serve(async (req) => {
   console.log("[MP Payment] Function invoked");
@@ -28,9 +63,23 @@ serve(async (req) => {
   const MP_ACCESS_TOKEN = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const ENVIRONMENT = Deno.env.get("ENVIRONMENT") || "production";
+
+  // Rate limiting check
+  const authHeader = req.headers.get('authorization');
+  const userId = authHeader ? authHeader.split(' ')[1] : 'anonymous';
   
-  console.log("[MP Payment] Token present:", !!MP_ACCESS_TOKEN);
-  console.log("[MP Payment] Token starts with:", MP_ACCESS_TOKEN?.substring(0, 10));
+  if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const allowed = await checkRateLimit(supabase, userId);
+    if (!allowed) {
+      console.warn("Rate limit exceeded", { userId });
+      return new Response(
+        JSON.stringify({ error: "Muitas requisições. Aguarde antes de tentar novamente." }),
+        { status: 429, headers: jsonHeaders },
+      );
+    }
+  }
   
   if (!MP_ACCESS_TOKEN) {
     console.error("[MP Payment] MP_ACCESS_TOKEN not configured");
@@ -51,7 +100,10 @@ serve(async (req) => {
   }
 
   const { orderId, items, payer, shippingAddress, shippingOption } = body;
-  console.log("[MP Payment] Request data:", { orderId, itemsCount: items?.length, hasPayer: !!payer });
+  
+  if (ENVIRONMENT === "development") {
+    console.log("[MP Payment] Request data:", { orderId, itemsCount: items?.length, hasPayer: !!payer });
+  }
 
   if (!orderId || !items || !Array.isArray(items) || items.length === 0) {
     console.error("[MP Payment] Invalid request data");
@@ -107,8 +159,9 @@ serve(async (req) => {
     };
   }
 
-  console.log("[MP Payment] Sending request to Mercado Pago API");
-  console.log("[MP Payment] Preference payload:", JSON.stringify(preferencePayload, null, 2));
+  if (ENVIRONMENT === "development") {
+    console.log("[MP Payment] Preference payload:", JSON.stringify(preferencePayload, null, 2));
+  }
   
   const mpRes = await fetch(
     "https://api.mercadopago.com/checkout/preferences",
@@ -123,18 +176,16 @@ serve(async (req) => {
   );
 
   const data = await mpRes.json();
-  console.log("[MP Payment] Mercado Pago response status:", mpRes.status);
-  console.log("[MP Payment] Mercado Pago response:", JSON.stringify(data, null, 2));
 
   if (!mpRes.ok) {
-    console.error("[MP Payment] Mercado Pago error:", data);
+    console.error("[MP Payment] Payment creation failed with status:", mpRes.status);
     return new Response(
-      JSON.stringify({ error: "Erro ao criar preferência no Mercado Pago", details: data }),
+      JSON.stringify({ error: "Erro ao criar preferência no Mercado Pago" }),
       { status: 500, headers: jsonHeaders },
     );
   }
 
-  console.log("[MP Payment] Success - Preference created:", data.id);
+  console.log("Payment created", { preferenceId: data.id });
   
   // Create payment record in database
   if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
@@ -163,9 +214,9 @@ serve(async (req) => {
     });
     
     if (!paymentRes.ok) {
-      console.error("[MP Payment] Failed to create payment record:", await paymentRes.text());
+      console.error("[MP Payment] Failed to create payment record");
     } else {
-      console.log("[MP Payment] Payment record created successfully");
+      console.log("Payment record created", { orderId });
     }
   }
   
