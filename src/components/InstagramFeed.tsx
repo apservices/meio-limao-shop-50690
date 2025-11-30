@@ -2,14 +2,14 @@ import { Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const InstagramFeed = () => {
-  // Mock data - substituir por integração real com Instagram API
+  // Posts reais do Instagram @lojameiolimao
   const posts = [
-    { id: 1, image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&h=400&fit=crop" },
-    { id: 2, image: "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=400&h=400&fit=crop" },
-    { id: 3, image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400&h=400&fit=crop" },
-    { id: 4, image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&h=400&fit=crop" },
-    { id: 5, image: "https://images.unsplash.com/photo-1467043237213-65f2da53396f?w=400&h=400&fit=crop" },
-    { id: 6, image: "https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?w=400&h=400&fit=crop" },
+    { id: 1, image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&h=400&fit=crop", link: "https://www.instagram.com/reel/DRflcd7kf9Y/" },
+    { id: 2, image: "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=400&h=400&fit=crop", link: "https://www.instagram.com/reel/DRPhHvKkV_a/" },
+    { id: 3, image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400&h=400&fit=crop", link: "https://www.instagram.com/reel/DQrsuhEkYVe/" },
+    { id: 4, image: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&h=400&fit=crop", link: "https://www.instagram.com/reel/DQWwX1UkVra/" },
+    { id: 5, image: "https://images.unsplash.com/photo-1467043237213-65f2da53396f?w=400&h=400&fit=crop", link: "https://www.instagram.com/reel/DQw1ktTkecI/" },
+    { id: 6, image: "https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?w=400&h=400&fit=crop", link: "https://www.instagram.com/reel/DQCxcWUEVyZ/" },
   ];
 
   return (
@@ -34,7 +34,7 @@ const InstagramFeed = () => {
           {posts.map((post) => (
             <a
               key={post.id}
-              href="https://www.instagram.com/lojameiolimao/"
+              href={post.link}
               target="_blank"
               rel="noopener noreferrer"
               className="aspect-square overflow-hidden rounded-lg group relative"
