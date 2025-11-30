@@ -125,9 +125,9 @@ serve(async (req) => {
     })),
     auto_return: "approved",
     back_urls: {
-      success: "https://meiolimao.shop/checkout/sucesso",
-      failure: "https://meiolimao.shop/checkout/erro",
-      pending: "https://meiolimao.shop/checkout/pendente",
+      success: "https://meiolimao.shop/checkout/success",
+      failure: "https://meiolimao.shop/checkout/failure",
+      pending: "https://meiolimao.shop/checkout/pending",
     },
     notification_url: webhookUrl,
     metadata: {
