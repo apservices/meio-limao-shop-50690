@@ -174,7 +174,7 @@ const Contact = () => {
                   </h2>
                   <div className="space-y-6">
                     <a
-                      href="https://wa.me/5511973500848"
+                      href="https://wa.me/5511973500848?text=Olá! Vim da página de contato e gostaria de conversar."
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-start gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors group"
