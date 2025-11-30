@@ -66,7 +66,7 @@ const NewsletterPopup = () => {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-[90vw] sm:max-w-sm p-4 sm:p-6">
+      <DialogContent className="max-w-[90vw] sm:max-w-sm p-4 sm:p-6 rounded-3xl border-2 border-primary/30">
         <DialogHeader className="sr-only">
           <DialogTitle>Assine a newsletter Meio Limão</DialogTitle>
           <DialogDescription>
