@@ -14,6 +14,11 @@ import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
 import SecurityBadges from "@/components/SecurityBadges";
 import { ProductRecommendations } from "@/components/ProductRecommendations";
+import BrandStory from "@/components/BrandStory";
+import TrustSection from "@/components/TrustSection";
+import CollectionShowcase from "@/components/CollectionShowcase";
+import InstagramCTA from "@/components/InstagramCTA";
+import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useProductsQuery } from "@/hooks/useProductsQuery";
@@ -42,6 +47,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
+      <SEOHead />
       <Navbar />
       
       <main className="pb-20 md:pb-8">
@@ -92,22 +98,8 @@ const Index = () => {
           )}
         </section>
 
-        {/* CTA Banner */}
-        <section className="py-16 bg-gradient-to-br from-secondary via-primary/20 to-accent">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white" style={{ textShadow: '1px 1px 3px rgba(139, 195, 74, 0.5), -1px -1px 3px rgba(139, 195, 74, 0.3), 0 0 10px rgba(139, 195, 74, 0.2)' }}>
-              Feito para quem floresce vivendo
-            </h2>
-            <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto" style={{ textShadow: '1px 1px 2px rgba(139, 195, 74, 0.4)' }}>
-              Peças que celebram sua autenticidade e leveza
-            </p>
-            <Link to="/shop">
-              <Button variant="hero" size="lg">
-                Descubra a Coleção
-              </Button>
-            </Link>
-          </div>
-        </section>
+        {/* Brand Story */}
+        <BrandStory />
 
         {/* Best Sellers */}
         <section className="py-16 container mx-auto px-4">
@@ -131,8 +123,11 @@ const Index = () => {
           )}
         </section>
 
+        <CollectionShowcase />
         <LooksSection />
+        <InstagramCTA />
         <TestimonialsSection />
+        <TrustSection />
         <InstagramFeed />
         <Newsletter />
       </main>
