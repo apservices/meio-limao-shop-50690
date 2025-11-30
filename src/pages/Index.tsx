@@ -95,10 +95,10 @@ const Index = () => {
         {/* CTA Banner */}
         <section className="py-16 bg-gradient-to-br from-secondary via-primary/20 to-accent">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white" style={{ textShadow: '2px 2px 8px rgba(46, 125, 50, 0.8), -1px -1px 4px rgba(46, 125, 50, 0.6), 1px -1px 4px rgba(46, 125, 50, 0.6), -1px 1px 4px rgba(46, 125, 50, 0.6)' }}>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white" style={{ textShadow: '1px 1px 3px rgba(139, 195, 74, 0.5), -1px -1px 3px rgba(139, 195, 74, 0.3), 0 0 10px rgba(139, 195, 74, 0.2)' }}>
               Feito para quem floresce vivendo
             </h2>
-            <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto" style={{ textShadow: '1px 1px 4px rgba(46, 125, 50, 0.7)' }}>
+            <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto" style={{ textShadow: '1px 1px 2px rgba(139, 195, 74, 0.4)' }}>
               Peças que celebram sua autenticidade e leveza
             </p>
             <Link to="/shop">
