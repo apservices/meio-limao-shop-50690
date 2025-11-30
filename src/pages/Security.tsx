@@ -2,7 +2,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { Shield, Lock, CreditCard, Server, Eye, UserCheck, AlertTriangle, CheckCircle } from "lucide-react";
+import { Shield, Lock, CreditCard, Eye, AlertTriangle, Clock, UserCheck, Server, CheckCircle } from "lucide-react";
 import { Helmet } from "react-helmet";
 
 const Security = () => {
@@ -16,6 +16,11 @@ const Security = () => {
       icon: Lock,
       title: "RLS (Row Level Security) com Isolamento Total",
       description: "Políticas de acesso avançadas garantem que cada cliente acesse apenas seus próprios dados. Informações pessoais, pedidos, pagamentos e endereços estão completamente isolados entre usuários."
+    },
+    {
+      icon: UserCheck,
+      title: "Autenticação de Dois Fatores (2FA)",
+      description: "Administradores são obrigados a usar 2FA para acesso ao painel. Clientes também podem ativar 2FA opcional para proteção adicional da conta."
     },
     {
       icon: CreditCard,
@@ -33,9 +38,14 @@ const Security = () => {
       description: "Nunca compartilhamos seus dados com terceiros sem autorização. Somos 100% compatíveis com a Lei Geral de Proteção de Dados (LGPD)."
     },
     {
-      icon: UserCheck,
-      title: "Logs de Auditoria Protegidos",
-      description: "Todas as ações sensíveis são registradas em logs protegidos, acessíveis apenas por administradores autorizados, garantindo rastreabilidade total."
+      icon: AlertTriangle,
+      title: "Rate Limiting e Anti-Spam",
+      description: "Todos os formulários públicos (contato, newsletter) possuem rate limiting para prevenir abuso e spam, mantendo o sistema seguro e estável."
+    },
+    {
+      icon: Clock,
+      title: "Gestão de Sessões",
+      description: "Sessões de administrador expiram automaticamente após inatividade. Operações sensíveis exigem revalidação. Pedidos pendentes são cancelados automaticamente após 24 horas."
     }
   ];
 
@@ -44,9 +54,13 @@ const Security = () => {
     { icon: CheckCircle, text: "Compatível com LGPD" },
     { icon: CheckCircle, text: "PCI DSS Compliant via Mercado Pago" },
     { icon: CheckCircle, text: "RLS (Row Level Security) Implementado" },
+    { icon: CheckCircle, text: "2FA Obrigatório para Administradores" },
+    { icon: CheckCircle, text: "Rate Limiting em Formulários Públicos" },
     { icon: CheckCircle, text: "Logs de Auditoria Protegidos" },
     { icon: CheckCircle, text: "Backup Automático Diário" },
     { icon: CheckCircle, text: "Monitoramento de Segurança 24/7" },
+    { icon: CheckCircle, text: "Gestão Avançada de Sessões" },
+    { icon: CheckCircle, text: "Cancelamento Automático de Pedidos Expirados" },
     { icon: CheckCircle, text: "Auditoria de Segurança Concluída" }
   ];
 
@@ -78,6 +92,14 @@ const Security = () => {
                 <p className="text-sm text-muted-foreground">
                   As políticas de acesso (RLS) foram revisadas manualmente e garantem isolamento total dos dados entre clientes. 
                   Todos os dados pessoais, pedidos, pagamentos, endereços e interações estão protegidos por controles avançados de segurança.
+                  <br /><br />
+                  <strong>Novas Melhorias Implementadas:</strong>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Autenticação de Dois Fatores (2FA) obrigatória para administradores</li>
+                    <li>Rate limiting em formulários públicos (contato e newsletter)</li>
+                    <li>Gestão avançada de sessões com timeout automático</li>
+                    <li>Cancelamento automático de pedidos pendentes após 24 horas</li>
+                  </ul>
                 </p>
               </div>
             </div>

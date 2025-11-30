@@ -23,3 +23,15 @@ verify_jwt = false
 
 [functions.subscribe-newsletter]
 verify_jwt = false
+
+[functions.generate-totp-secret]
+verify_jwt = true
+
+[functions.verify-totp]
+verify_jwt = true
+
+[functions.enable-mfa]
+verify_jwt = true
+
+[functions.disable-mfa]
+verify_jwt = true
