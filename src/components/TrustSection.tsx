@@ -51,26 +51,24 @@ const TrustSection = () => {
         </div>
 
         {/* Guarantees Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-16">
           {guarantees.map((item, index) => {
             const Icon = item.icon;
             return (
               <div 
                 key={index}
-                className="bg-card rounded-2xl p-6 border border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300"
+                className="flex flex-col items-center text-center space-y-2.5 p-5 rounded-2xl bg-card/50 backdrop-blur-sm hover:bg-card hover:shadow-md transition-all duration-300"
               >
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">
-                      {item.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Icon className="h-5 w-5 text-primary" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h3 className="font-medium text-sm md:text-base text-foreground mb-0.5">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs md:text-sm text-muted-foreground font-light">
+                    {item.description}
+                  </p>
                 </div>
               </div>
             );
