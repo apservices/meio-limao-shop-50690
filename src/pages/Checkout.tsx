@@ -99,6 +99,7 @@ const Checkout = () => {
     shippingState: "",
     isGift: false,
     giftMessage: "",
+    paymentMethod: "pix",
     cardNumber: "",
     cardName: "",
     cardCvv: "",
@@ -914,7 +915,7 @@ const Checkout = () => {
                       <CreditCard className="h-5 w-5 text-primary" />
                       <div>
                         <p className="font-medium">Cartão de Crédito</p>
-                        <p className="text-sm text-muted-foreground">Até 3x sem juros ou até 6x com juros</p>
+                        <p className="text-sm text-muted-foreground">Processamento via Mercado Pago • Até 3x sem juros</p>
                       </div>
                     </Label>
                   </div>
@@ -922,69 +923,24 @@ const Checkout = () => {
               </RadioGroup>
 
               {paymentMethod === "credit" && (
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <Label htmlFor="cardNumber">Número do Cartão</Label>
-                    <Input 
-                      id="cardNumber" 
-                      placeholder="0000 0000 0000 0000"
-                      value={formData.cardNumber}
-                      onChange={(e) => setFormData({...formData, cardNumber: e.target.value.replace(/\D/g, "")})}
-                      maxLength={16}
-                      required 
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="col-span-2">
-                      <Label htmlFor="cardName">Nome no Cartão</Label>
-                      <Input 
-                        id="cardName"
-                        value={formData.cardName}
-                        onChange={(e) => setFormData({...formData, cardName: e.target.value})}
-                        required 
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cardCvv">CVV</Label>
-                      <Input 
-                        id="cardCvv"
-                        value={formData.cardCvv}
-                        onChange={(e) => setFormData({...formData, cardCvv: e.target.value.replace(/\D/g, "")})}
-                        maxLength={4}
-                        required 
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="cardExpiry">Validade (MM/AA)</Label>
-                      <Input 
-                        id="cardExpiry" 
-                        placeholder="MM/AA"
-                        value={formData.cardExpiry}
-                        onChange={(e) => {
-                          let val = e.target.value.replace(/\D/g, "");
-                          if (val.length >= 2) {
-                            val = val.slice(0, 2) + "/" + val.slice(2, 4);
-                          }
-                          setFormData({...formData, cardExpiry: val});
-                        }}
-                        maxLength={5}
-                        required 
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="installments">Parcelas</Label>
-                      <select id="installments" className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                        <option>1x de R$ {finalTotal.toFixed(2)}</option>
-                        <option>2x de R$ {(finalTotal / 2).toFixed(2)}</option>
-                        <option>3x de R$ {(finalTotal / 3).toFixed(2)} sem juros</option>
-                        <option>4x de R$ {(finalTotal / 4 * 1.02).toFixed(2)}</option>
-                        <option>5x de R$ {(finalTotal / 5 * 1.03).toFixed(2)}</option>
-                        <option>6x de R$ {(finalTotal / 6 * 1.04).toFixed(2)}</option>
-                      </select>
-                    </div>
-                  </div>
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-primary/20">
+                  <p className="text-sm text-muted-foreground">
+                    Após clicar em "Finalizar Pedido", você será redirecionado para o <span className="font-semibold text-primary">Mercado Pago</span> onde poderá:
+                  </p>
+                  <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">✓</span>
+                      <span>Inserir os dados do seu cartão de crédito de forma <strong className="text-foreground">100% segura</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">✓</span>
+                      <span>Escolher o parcelamento (até <strong className="text-foreground">3x sem juros</strong> ou até 6x com juros)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">✓</span>
+                      <span>Usar cartões de todas as bandeiras (Visa, Mastercard, Elo, etc.)</span>
+                    </li>
+                  </ul>
                 </div>
               )}
             </div>
