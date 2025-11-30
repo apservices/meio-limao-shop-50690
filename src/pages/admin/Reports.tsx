@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DollarSign, ShoppingCart, Users, TrendingUp, Package } from "lucide-react";
+import { DollarSign, ShoppingCart, Users, TrendingUp, Package, Eye, MousePointerClick, Target } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import {
   LineChart,
@@ -15,9 +15,13 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface Stats {
   totalRevenue: number;
@@ -25,6 +29,10 @@ interface Stats {
   totalCustomers: number;
   averageOrderValue: number;
   totalProducts: number;
+  conversionRate: number;
+  totalPageViews: number;
+  totalProductViews: number;
+  totalAddToCarts: number;
 }
 
 interface SalesData {
@@ -49,6 +57,19 @@ interface NewsletterSubscriber {
   source?: string | null;
 }
 
+interface TopProduct {
+  product_id: string;
+  product_name: string;
+  view_count: number;
+}
+
+interface CustomerJourneyEvent {
+  event_type: string;
+  event_data: any;
+  created_at: string;
+  customer_email?: string;
+}
+
 const Reports = () => {
   const [stats, setStats] = useState<Stats>({
     totalRevenue: 0,
@@ -56,6 +77,10 @@ const Reports = () => {
     totalCustomers: 0,
     averageOrderValue: 0,
     totalProducts: 0,
+    conversionRate: 0,
+    totalPageViews: 0,
+    totalProductViews: 0,
+    totalAddToCarts: 0,
   });
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +88,9 @@ const Reports = () => {
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [exportingContacts, setExportingContacts] = useState(false);
   const [exportingNewsletter, setExportingNewsletter] = useState(false);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [recentJourney, setRecentJourney] = useState<CustomerJourneyEvent[]>([]);
+  const [funnelData, setFunnelData] = useState<any[]>([]);
 
   useEffect(() => {
     loadReports();
@@ -75,6 +103,7 @@ const Reports = () => {
       ordersResult,
       customersResult,
       productsResult,
+      eventsResult,
     ] = await Promise.all([
       supabase
         .from("orders")
@@ -82,13 +111,18 @@ const Reports = () => {
         .eq("payment_status", "paid"),
       supabase.from("customers").select("*", { count: "exact", head: true }),
       supabase.from("products").select("*", { count: "exact", head: true }),
+      supabase
+        .from("customer_events")
+        .select("event_type, event_data, created_at, customer_id")
+        .order("created_at", { ascending: false }),
     ]);
 
-    if (ordersResult.error || customersResult.error || productsResult.error) {
+    if (ordersResult.error || customersResult.error || productsResult.error || eventsResult.error) {
       console.error("Erro ao carregar relatórios", {
         orders: ordersResult.error,
         customers: customersResult.error,
         products: productsResult.error,
+        events: eventsResult.error,
       });
       toast.error("Não foi possível carregar todos os dados. Tente novamente mais tarde.");
     }
@@ -96,11 +130,21 @@ const Reports = () => {
     const orders = ordersResult.data || [];
     const customersCount = customersResult.count || 0;
     const productsCount = productsResult.count || 0;
+    const events = eventsResult.data || [];
 
     // Calculate stats
     const totalRevenue = orders.reduce((sum, order) => sum + (order.total_cents || 0), 0) || 0;
     const totalOrders = orders.length || 0;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+    // Calculate analytics from events
+    const pageViews = events.filter(e => e.event_type === 'page_view').length;
+    const productViews = events.filter(e => e.event_type === 'product_view').length;
+    const addToCarts = events.filter(e => e.event_type === 'add_to_cart').length;
+    const purchases = events.filter(e => e.event_type === 'purchase').length;
+    
+    // Conversion rate = (purchases / page views) * 100
+    const conversionRate = pageViews > 0 ? (purchases / pageViews) * 100 : 0;
 
     setStats({
       totalRevenue: totalRevenue / 100,
@@ -108,7 +152,54 @@ const Reports = () => {
       totalCustomers: customersCount || 0,
       averageOrderValue: averageOrderValue / 100,
       totalProducts: productsCount || 0,
+      conversionRate,
+      totalPageViews: pageViews,
+      totalProductViews: productViews,
+      totalAddToCarts: addToCarts,
     });
+
+    // Top viewed products
+    const productViewsMap = new Map<string, { count: number; name: string }>();
+    events
+      .filter(e => e.event_type === 'product_view' && e.event_data)
+      .forEach(e => {
+        const data = e.event_data as any;
+        if (data?.product_id) {
+          const productId = data.product_id;
+          const productName = data.product_name || 'Produto Desconhecido';
+          const current = productViewsMap.get(productId) || { count: 0, name: productName };
+          productViewsMap.set(productId, { count: current.count + 1, name: productName });
+        }
+      });
+
+    const topProductsList = Array.from(productViewsMap.entries())
+      .map(([product_id, data]) => ({
+        product_id,
+        product_name: data.name,
+        view_count: data.count,
+      }))
+      .sort((a, b) => b.view_count - a.view_count)
+      .slice(0, 10);
+
+    setTopProducts(topProductsList);
+
+    // Customer journey (últimos 20 eventos)
+    const journeyEvents = events.slice(0, 20).map(e => ({
+      event_type: e.event_type,
+      event_data: e.event_data,
+      created_at: e.created_at,
+      customer_email: e.customer_id || 'Visitante',
+    }));
+    setRecentJourney(journeyEvents);
+
+    // Funnel data
+    const funnelSteps = [
+      { name: 'Visualizações', value: pageViews, fill: 'hsl(var(--primary))' },
+      { name: 'Produtos Vistos', value: productViews, fill: 'hsl(var(--secondary))' },
+      { name: 'Adicionou ao Carrinho', value: addToCarts, fill: 'hsl(var(--accent))' },
+      { name: 'Compras', value: purchases, fill: 'hsl(var(--success))' },
+    ];
+    setFunnelData(funnelSteps);
 
     // Generate sales data for last 7 days
     if (orders) {
@@ -198,7 +289,48 @@ const Reports = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
+                  <Target className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {stats.conversionRate.toFixed(2)}%
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stats.totalPageViews} visitas → {stats.totalOrders} compras
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Visualizações</CardTitle>
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalProductViews}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    produtos vistos
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Adicionados</CardTitle>
+                  <MousePointerClick className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalAddToCarts}</div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    itens ao carrinho
+                  </p>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
@@ -208,48 +340,72 @@ const Reports = () => {
                   <div className="text-2xl font-bold">
                     R$ {stats.totalRevenue.toFixed(2)}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stats.totalOrders} pedidos
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Funil de Conversão</CardTitle>
+                  <p className="text-sm text-muted-foreground">Jornada completa do visitante até a compra</p>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={funnelData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="name" type="category" width={150} />
+                      <Tooltip />
+                      <Bar dataKey="value" radius={[0, 8, 8, 0]}>
+                        {funnelData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pedidos</CardTitle>
-                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                <CardHeader>
+                  <CardTitle>Top 10 Produtos Mais Vistos</CardTitle>
+                  <p className="text-sm text-muted-foreground">Produtos com maior interesse</p>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalOrders}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Clientes</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalCustomers}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    R$ {stats.averageOrderValue.toFixed(2)}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Produtos</CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalProducts}</div>
+                  {topProducts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Nenhum dado de visualização ainda.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {topProducts.map((product, index) => (
+                        <div
+                          key={product.product_id}
+                          className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Badge variant="secondary" className="w-8 h-8 flex items-center justify-center">
+                              {index + 1}
+                            </Badge>
+                            <div>
+                              <p className="font-medium text-sm">{product.product_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                ID: {product.product_id.slice(0, 8)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-bold">{product.view_count}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -290,19 +446,54 @@ const Reports = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Pedidos por Dia</CardTitle>
+                <CardTitle>Jornada do Cliente em Tempo Real</CardTitle>
+                <p className="text-sm text-muted-foreground">Últimos 20 eventos registrados no site</p>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={salesData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="orders" fill="hsl(var(--primary))" name="Pedidos" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {recentJourney.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Nenhum evento registrado ainda.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {recentJourney.map((event, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-shrink-0 mt-1">
+                          {event.event_type === 'page_view' && <Eye className="h-4 w-4 text-blue-500" />}
+                          {event.event_type === 'product_view' && <Package className="h-4 w-4 text-purple-500" />}
+                          {event.event_type === 'add_to_cart' && <ShoppingCart className="h-4 w-4 text-orange-500" />}
+                          {event.event_type === 'purchase' && <DollarSign className="h-4 w-4 text-green-500" />}
+                          {event.event_type === 'checkout_start' && <MousePointerClick className="h-4 w-4 text-yellow-500" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className="text-xs">
+                              {event.event_type.replace(/_/g, ' ')}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(event.created_at).toLocaleString('pt-BR')}
+                            </span>
+                          </div>
+                          {event.event_data && (
+                            <p className="text-sm mt-1 text-muted-foreground truncate">
+                              {event.event_data.product_name && `Produto: ${event.event_data.product_name}`}
+                              {event.event_data.path && `Página: ${event.event_data.path}`}
+                              {event.event_data.cart_value && `Valor: R$ ${(event.event_data.cart_value / 100).toFixed(2)}`}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="text-xs flex-shrink-0">
+                          {typeof event.customer_email === 'string' && event.customer_email.includes('@')
+                            ? event.customer_email.split('@')[0]
+                            : 'Anônimo'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
