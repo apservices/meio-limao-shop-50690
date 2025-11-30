@@ -4,15 +4,18 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { signupSchema } from "@/lib/validations";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [marketingOptIn, setMarketingOptIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -31,6 +34,16 @@ const Signup = () => {
       });
 
       await signUp(validatedData.email, validatedData.password, validatedData.fullName);
+      
+      // Atualizar customer com marketing_opt_in
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from("customers")
+          .update({ marketing_opt_in: marketingOptIn })
+          .eq("user_id", user.id);
+      }
+      
       toast({ 
         title: "Conta criada com sucesso!",
         description: "Verifique seu email para confirmar o cadastro." 
@@ -115,6 +128,20 @@ const Signup = () => {
             <p className="text-xs text-muted-foreground">
               Mínimo 8 caracteres com maiúscula, minúscula, número e caractere especial
             </p>
+          </div>
+
+          <div className="flex items-start space-x-2 py-2">
+            <Checkbox 
+              id="marketing" 
+              checked={marketingOptIn}
+              onCheckedChange={(checked) => setMarketingOptIn(checked as boolean)}
+            />
+            <label
+              htmlFor="marketing"
+              className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Aceito receber ofertas, novidades e promoções exclusivas por e-mail e WhatsApp
+            </label>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

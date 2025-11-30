@@ -35,3 +35,9 @@ verify_jwt = true
 
 [functions.disable-mfa]
 verify_jwt = true
+
+[functions.track-event]
+verify_jwt = false
+
+[functions.analyze-customer-behavior]
+verify_jwt = true

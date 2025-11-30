@@ -28,6 +28,7 @@ import Collections from "./pages/admin/Collections";
 import Orders from "./pages/admin/Orders";
 import Coupons from "./pages/admin/Coupons";
 import Customers from "./pages/admin/Customers";
+import Insights from "./pages/admin/Insights";
 import Reports from "./pages/admin/Reports";
 import NewArrivals from "./pages/NewArrivals";
 import Looks from "./pages/Looks";
@@ -125,6 +126,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Customers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/insights"
+              element={
+                <ProtectedRoute>
+                  <Insights />
                 </ProtectedRoute>
               }
             />
