@@ -552,7 +552,7 @@ const Checkout = () => {
         <div className="container mx-auto px-4 py-2 flex items-center justify-center gap-2 text-sm">
           <Shield className="h-4 w-4 text-primary" />
           <span className="font-medium text-primary">Ambiente 100% Seguro</span>
-          <span className="text-muted-foreground">• SSL Certificado • Pagamento Criptografado</span>
+          <span className="text-muted-foreground">• Dados protegidos e criptografados</span>
         </div>
       </div>
       
@@ -1000,7 +1000,7 @@ const Checkout = () => {
               </Button>
               
               <div className="mt-6 space-y-2 text-xs text-center text-muted-foreground">
-                <p>🔒 Ambiente 100% seguro</p>
+                <p>🔒 Ambiente 100% Seguro • Dados protegidos e criptografados</p>
                 <p>✓ Compra protegida</p>
               </div>
             </div>

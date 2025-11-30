@@ -14,8 +14,8 @@ const Security = () => {
     },
     {
       icon: Lock,
-      title: "Criptografia de Dados",
-      description: "Seus dados pessoais são armazenados com criptografia de ponta a ponta. Senhas são protegidas com hash bcrypt e nunca são armazenadas em texto plano."
+      title: "RLS (Row Level Security) com Isolamento Total",
+      description: "Políticas de acesso avançadas garantem que cada cliente acesse apenas seus próprios dados. Informações pessoais, pedidos, pagamentos e endereços estão completamente isolados entre usuários."
     },
     {
       icon: CreditCard,
@@ -34,18 +34,20 @@ const Security = () => {
     },
     {
       icon: UserCheck,
-      title: "Autenticação Segura",
-      description: "Sistema de autenticação com tokens JWT, proteção contra força bruta e verificação em duas etapas disponível para maior segurança."
+      title: "Logs de Auditoria Protegidos",
+      description: "Todas as ações sensíveis são registradas em logs protegidos, acessíveis apenas por administradores autorizados, garantindo rastreabilidade total."
     }
   ];
 
   const complianceItems = [
     { icon: CheckCircle, text: "Certificado SSL/TLS Ativo" },
     { icon: CheckCircle, text: "Compatível com LGPD" },
-    { icon: CheckCircle, text: "PCI DSS Compliant" },
-    { icon: CheckCircle, text: "Política de Privacidade Clara" },
+    { icon: CheckCircle, text: "PCI DSS Compliant via Mercado Pago" },
+    { icon: CheckCircle, text: "RLS (Row Level Security) Implementado" },
+    { icon: CheckCircle, text: "Logs de Auditoria Protegidos" },
     { icon: CheckCircle, text: "Backup Automático Diário" },
-    { icon: CheckCircle, text: "Monitoramento de Segurança 24/7" }
+    { icon: CheckCircle, text: "Monitoramento de Segurança 24/7" },
+    { icon: CheckCircle, text: "Auditoria de Segurança Concluída" }
   ];
 
   return (
@@ -64,10 +66,22 @@ const Security = () => {
           <h1 className="text-4xl md:text-5xl font-serif font-semibold mb-4">
             Sua Segurança é Nossa Prioridade
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
             Investimos em tecnologia de ponta para garantir que suas informações estejam sempre protegidas. 
             Compre com total tranquilidade.
           </p>
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-6 max-w-3xl mx-auto">
+            <div className="flex items-start gap-4">
+              <CheckCircle className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
+              <div className="text-left">
+                <h3 className="font-semibold text-lg mb-2">Auditoria de Segurança Concluída com Sucesso</h3>
+                <p className="text-sm text-muted-foreground">
+                  As políticas de acesso (RLS) foram revisadas manualmente e garantem isolamento total dos dados entre clientes. 
+                  Todos os dados pessoais, pedidos, pagamentos, endereços e interações estão protegidos por controles avançados de segurança.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Security Features Grid */}
