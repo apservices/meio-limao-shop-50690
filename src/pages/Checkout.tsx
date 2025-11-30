@@ -363,7 +363,6 @@ const Checkout = () => {
         city: validatedData.city,
         state: validatedData.state,
         country: 'BR' as const,
-        address_type: 'billing' as const,
       };
 
       const shippingAddress = formData.useDifferentShippingAddress ? {
@@ -377,11 +376,7 @@ const Checkout = () => {
         city: validatedData.shippingCity || validatedData.city,
         state: validatedData.shippingState || validatedData.state,
         country: 'BR' as const,
-        address_type: 'shipping' as const,
-      } : {
-        ...billingAddress,
-        address_type: 'both' as const,
-      };
+      } : billingAddress;
 
       const customerId = await ensureCustomerRecord(user.id, {
         name: validatedData.name,
