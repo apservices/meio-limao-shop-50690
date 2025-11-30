@@ -8,13 +8,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useCart } from "@/contexts/CartContext";
-import { CreditCard, Loader2, Smartphone, Truck, Gift } from "lucide-react";
+import { CreditCard, Loader2, Smartphone, Truck, Gift, Shield } from "lucide-react";
 import { checkoutSchema } from "@/lib/validations";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { CepInput } from "@/components/CepInput";
+import SecurityBadges from "@/components/SecurityBadges";
 
 type ShippingOption = {
   id: string;
@@ -545,6 +546,16 @@ const Checkout = () => {
   return (
     <div className="min-h-screen bg-accent/5">
       <Navbar />
+      
+      {/* Security Badge */}
+      <div className="bg-primary/10 border-b border-primary/20">
+        <div className="container mx-auto px-4 py-2 flex items-center justify-center gap-2 text-sm">
+          <Shield className="h-4 w-4 text-primary" />
+          <span className="font-medium text-primary">Ambiente 100% Seguro</span>
+          <span className="text-muted-foreground">• SSL Certificado • Pagamento Criptografado</span>
+        </div>
+      </div>
+      
       <div className="border-b bg-background/80">
         <div className="container mx-auto px-4 py-3 text-sm text-muted-foreground flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           {user ? (

@@ -32,6 +32,9 @@ import Reports from "./pages/admin/Reports";
 import NewArrivals from "./pages/NewArrivals";
 import Looks from "./pages/Looks";
 import AdminLooks from "./pages/admin/Looks";
+import Security from "./pages/Security";
+import { CartProvider } from "@/contexts/CartContext";
+import { WishlistProvider } from "@/contexts/WishlistContext";
 
 const queryClient = new QueryClient();
 
@@ -42,7 +45,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
+          <CartProvider>
+            <WishlistProvider>
+              <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/produto/:id" element={<ProductDetail />} />
@@ -62,6 +67,7 @@ const App = () => (
             <Route path="/termos" element={<Terms />} />
             <Route path="/sobre" element={<About />} />
             <Route path="/contato" element={<Contact />} />
+            <Route path="/seguranca" element={<Security />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route
@@ -139,6 +145,8 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+            </WishlistProvider>
+          </CartProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
