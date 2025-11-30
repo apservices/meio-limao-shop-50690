@@ -68,7 +68,7 @@ const Index = () => {
         <section className="py-16 container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-2">Novidades</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">Novidades</h2>
               <p className="text-muted-foreground">Acabaram de chegar</p>
             </div>
             <Link to="/novidades">
@@ -95,10 +95,10 @@ const Index = () => {
         {/* CTA Banner */}
         <section className="py-16 bg-gradient-to-br from-secondary via-primary/20 to-accent">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-foreground">
               Feito para quem floresce vivendo
             </h2>
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-foreground/80 mb-8 max-w-2xl mx-auto">
               Peças que celebram sua autenticidade e leveza
             </p>
             <Link to="/shop">
@@ -113,7 +113,7 @@ const Index = () => {
         <section className="py-16 container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-2">Mais Vendidos</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-secondary via-primary to-accent bg-clip-text text-transparent">Mais Vendidos</h2>
               <p className="text-muted-foreground">Queridinhos das clientes</p>
             </div>
           </div>
