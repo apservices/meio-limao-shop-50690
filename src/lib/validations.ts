@@ -191,51 +191,27 @@ export const checkoutSchema = z.object({
   cardNumber: z
     .string()
     .trim()
-    .regex(/^\d{16}$/, "Número do cartão inválido")
-    .refine(validateLuhn, "Número do cartão inválido")
     .optional()
     .or(z.literal("")),
   
   cardName: z
     .string()
     .trim()
-    .min(3, "Nome no cartão inválido")
-    .max(100, "Nome muito longo")
-    .regex(/^[a-zA-Z\s]+$/, "Nome deve conter apenas letras")
     .optional()
     .or(z.literal("")),
   
   cardCvv: z
     .string()
     .trim()
-    .regex(/^\d{3,4}$/, "CVV deve ter 3 ou 4 dígitos")
     .optional()
     .or(z.literal("")),
   
   cardExpiry: z
     .string()
     .trim()
-    .regex(/^(0[1-9]|1[0-2])\/\d{2}$/, "Validade deve estar no formato MM/AA")
-    .refine((val) => {
-      if (!val) return true;
-      const [month, year] = val.split("/");
-      const expiry = new Date(2000 + parseInt(year), parseInt(month) - 1);
-      return expiry > new Date();
-    }, "Cartão vencido")
     .optional()
     .or(z.literal("")),
-}).refine(
-  (data) => {
-    if (data.paymentMethod === "credit") {
-      return !!(data.cardNumber && data.cardName && data.cardCvv && data.cardExpiry);
-    }
-    return true;
-  },
-  {
-    message: "Preencha todos os dados do cartão",
-    path: ["cardNumber"],
-  }
-);
+});
 
 // Schema de validação para Senha
 export const passwordSchema = z
