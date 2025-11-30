@@ -90,6 +90,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/seguranca" className="text-muted-foreground hover:text-primary transition-colors">
+                  Segurança e Certificados
+                </Link>
+              </li>
+              <li>
                 <a
                   href="https://wa.me/5511973500848"
                   target="_blank"

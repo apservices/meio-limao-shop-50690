@@ -12,6 +12,7 @@ import LooksSection from "@/components/LooksSection";
 import InstagramFeed from "@/components/InstagramFeed";
 import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
+import SecurityBadges from "@/components/SecurityBadges";
 import { ProductRecommendations } from "@/components/ProductRecommendations";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -49,6 +50,9 @@ const Index = () => {
 
         {/* Benefits */}
         <BenefitsSection />
+
+        {/* Security Badges */}
+        <SecurityBadges />
 
         {/* Personalized Recommendations - Only show if user is logged in */}
         {user && (
