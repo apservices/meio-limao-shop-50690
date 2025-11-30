@@ -109,7 +109,7 @@ const Navbar = () => {
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/dashboard">Admin</Link>
+                      <Link to="/admin">Admin</Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => signOut()}>Sair</DropdownMenuItem>
