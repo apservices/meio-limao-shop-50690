@@ -8,6 +8,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [mfaChecked, setMfaChecked] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaVerified, setMfaVerified] = useState(false);
   const [checkingMfa, setCheckingMfa] = useState(true);
 
   useEffect(() => {
@@ -28,21 +29,27 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         if (!error && data) {
           setMfaEnabled(true);
           
-          // Send admin access notification (only once per session)
-          const sessionNotified = sessionStorage.getItem(`admin_access_notified_${user.id}`);
-          if (!sessionNotified) {
-            try {
-              await supabase.functions.invoke('send-security-notification', {
-                body: {
-                  event_type: 'admin_access',
-                  metadata: {
-                    userAgent: navigator.userAgent,
+          // Check if 2FA has been verified in this session
+          const verified = sessionStorage.getItem(`2fa_verified_${user.id}`);
+          if (verified) {
+            setMfaVerified(true);
+            
+            // Send admin access notification (only once per session)
+            const sessionNotified = sessionStorage.getItem(`admin_access_notified_${user.id}`);
+            if (!sessionNotified) {
+              try {
+                await supabase.functions.invoke('send-security-notification', {
+                  body: {
+                    event_type: 'admin_access',
+                    metadata: {
+                      userAgent: navigator.userAgent,
+                    }
                   }
-                }
-              });
-              sessionStorage.setItem(`admin_access_notified_${user.id}`, 'true');
-            } catch (e) {
-              console.error("Failed to send admin access notification:", e);
+                });
+                sessionStorage.setItem(`admin_access_notified_${user.id}`, 'true');
+              } catch (e) {
+                console.error("Failed to send admin access notification:", e);
+              }
             }
           }
         }
@@ -82,6 +89,11 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   // Force 2FA setup for admins if not enabled (except when already on security page)
   if (isAdmin && mfaChecked && !mfaEnabled && location.pathname !== "/conta/seguranca") {
     return <Navigate to="/conta/seguranca" state={{ forceSetup: true, from: location.pathname }} />;
+  }
+
+  // Force 2FA verification if enabled but not verified in this session
+  if (isAdmin && mfaChecked && mfaEnabled && !mfaVerified) {
+    return <Navigate to="/verify-2fa" state={{ from: location.pathname }} />;
   }
 
   return <>{children}</>;
