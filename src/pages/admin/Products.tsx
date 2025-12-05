@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Edit, Sparkles } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit, Sparkles, Copy } from "lucide-react";
 import { ImageUploadWithAI } from "@/components/admin/ImageUploadWithAI";
+import { ProductVariantsEditor, ProductVariant } from "@/components/admin/ProductVariantsEditor";
 import {
   Table,
   TableBody,
@@ -75,7 +76,14 @@ const Products = () => {
     stock: "0",
     is_new: false,
     is_active: true,
+    // Novos campos
+    sku_base: "",
+    weight_grams: "300",
+    dimensions: "",
+    meta_title: "",
+    meta_description: "",
   });
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
 
   useEffect(() => {
     loadProducts();
@@ -105,6 +113,11 @@ const Products = () => {
     e.preventDefault();
     setLoading(true);
 
+    // Calcular estoque total das variantes
+    const totalStock = variants.length > 0 
+      ? variants.reduce((sum, v) => sum + v.inventory_qty, 0)
+      : parseInt(formData.stock);
+
     const productData = {
       name: formData.name,
       description: formData.description,
@@ -115,32 +128,76 @@ const Products = () => {
       images: formData.images ? formData.images.split(',').map(url => url.trim()).filter(url => url) : [],
       sizes: formData.sizes ? formData.sizes.split(',').map(size => size.trim()).filter(size => size) : [],
       colors: formData.colors ? formData.colors.split(',').map(color => color.trim()).filter(color => color) : [],
-      stock: parseInt(formData.stock),
+      stock: totalStock,
       is_new: formData.is_new,
       is_active: formData.is_active,
       rating: 0,
       reviews_count: 0,
     };
 
+    let productId: string;
     let error;
+
     if (editingProduct) {
+      productId = editingProduct.id;
       ({ error } = await supabase
         .from("products")
         .update(productData)
         .eq("id", editingProduct.id));
     } else {
-      ({ error } = await supabase.from("products").insert([productData]));
+      const { data, error: insertError } = await supabase
+        .from("products")
+        .insert([productData])
+        .select()
+        .single();
+      error = insertError;
+      productId = data?.id;
     }
 
     if (error) {
       toast({ title: "Erro ao salvar produto", variant: "destructive" });
-    } else {
-      toast({ title: editingProduct ? "Produto atualizado!" : "Produto criado!" });
-      setDialogOpen(false);
-      resetForm();
-      loadProducts();
+      setLoading(false);
+      return;
     }
 
+    // Salvar variantes se houver
+    if (variants.length > 0 && productId) {
+      // Deletar variantes antigas se estiver editando
+      if (editingProduct) {
+        await supabase
+          .from("product_variants")
+          .delete()
+          .eq("product_id", productId);
+      }
+
+      // Inserir novas variantes
+      const variantsToInsert = variants.map(v => ({
+        product_id: productId,
+        sku: v.sku,
+        option1_label: v.option1_label,
+        option1_value: v.option1_value,
+        option2_label: v.option2_label,
+        option2_value: v.option2_value,
+        price_cents: v.price_cents,
+        inventory_qty: v.inventory_qty,
+        weight_grams: v.weight_grams,
+        is_active: v.is_active,
+      }));
+
+      const { error: variantsError } = await supabase
+        .from("product_variants")
+        .insert(variantsToInsert);
+
+      if (variantsError) {
+        console.error("Erro ao salvar variantes:", variantsError);
+        toast({ title: "Produto salvo, mas erro nas variantes", variant: "destructive" });
+      }
+    }
+
+    toast({ title: editingProduct ? "Produto atualizado!" : "Produto criado!" });
+    setDialogOpen(false);
+    resetForm();
+    loadProducts();
     setLoading(false);
   };
 
@@ -172,8 +229,38 @@ const Products = () => {
       stock: product.stock.toString(),
       is_new: product.is_new,
       is_active: product.is_active,
+      sku_base: "",
+      weight_grams: "300",
+      dimensions: "",
+      meta_title: "",
+      meta_description: "",
     });
+    loadVariants(product.id);
     setDialogOpen(true);
+  };
+
+  const loadVariants = async (productId: string) => {
+    const { data } = await supabase
+      .from("product_variants")
+      .select("*")
+      .eq("product_id", productId);
+    
+    if (data) {
+      setVariants(data.map(v => ({
+        id: v.id,
+        sku: v.sku,
+        option1_label: v.option1_label || "Tamanho",
+        option1_value: v.option1_value || "",
+        option2_label: v.option2_label || "Cor",
+        option2_value: v.option2_value || "",
+        price_cents: v.price_cents,
+        inventory_qty: v.inventory_qty || 0,
+        weight_grams: v.weight_grams || 300,
+        is_active: v.is_active ?? true,
+      })));
+    } else {
+      setVariants([]);
+    }
   };
 
   const resetForm = () => {
@@ -191,7 +278,13 @@ const Products = () => {
       stock: "0",
       is_new: false,
       is_active: true,
+      sku_base: "",
+      weight_grams: "300",
+      dimensions: "",
+      meta_title: "",
+      meta_description: "",
     });
+    setVariants([]);
   };
 
   const handleImageAnalyzed = (data: {
@@ -369,6 +462,54 @@ const Products = () => {
                   <p className="text-xs text-muted-foreground mt-1">Separar por vírgula</p>
                 </div>
 
+                {/* Variantes de Estoque */}
+                <div className="pt-4 border-t">
+                  <ProductVariantsEditor
+                    sizes={formData.sizes ? formData.sizes.split(',').map(s => s.trim()).filter(s => s) : []}
+                    colors={formData.colors ? formData.colors.split(',').map(c => c.trim()).filter(c => c) : []}
+                    basePrice={parseFloat(formData.price) || 0}
+                    baseSku={formData.sku_base || formData.name.substring(0, 4).toUpperCase().replace(/\s+/g, '') || "PROD"}
+                    variants={variants}
+                    onChange={setVariants}
+                  />
+                </div>
+
+                {/* SKU Base e Peso */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="sku_base">SKU Base</Label>
+                    <Input
+                      id="sku_base"
+                      value={formData.sku_base}
+                      onChange={(e) => setFormData({ ...formData, sku_base: e.target.value.toUpperCase() })}
+                      placeholder="VEST"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Prefixo para SKUs das variantes</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="weight_grams">Peso (gramas) *</Label>
+                    <Input
+                      id="weight_grams"
+                      type="number"
+                      value={formData.weight_grams}
+                      onChange={(e) => setFormData({ ...formData, weight_grams: e.target.value })}
+                      placeholder="300"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Para cálculo de frete</p>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="dimensions">Dimensões (AxLxP cm)</Label>
+                  <Input
+                    id="dimensions"
+                    value={formData.dimensions}
+                    onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })}
+                    placeholder="30x25x5"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Altura x Largura x Profundidade para frete</p>
+                </div>
+
                 <div>
                   <Label htmlFor="images">Galeria de Imagens Adicionais</Label>
                   <Textarea
@@ -381,16 +522,47 @@ const Products = () => {
                   <p className="text-xs text-muted-foreground mt-1">URLs separadas por vírgula (para galeria de fotos)</p>
                 </div>
                 
-                <div>
-                  <Label htmlFor="stock">Estoque *</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    required
-                    placeholder="100"
-                  />
+                {variants.length === 0 && (
+                  <div>
+                    <Label htmlFor="stock">Estoque Total *</Label>
+                    <Input
+                      id="stock"
+                      type="number"
+                      value={formData.stock}
+                      onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                      required
+                      placeholder="100"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Use as variantes acima para estoque por tamanho/cor</p>
+                  </div>
+                )}
+
+                {/* SEO Fields */}
+                <div className="pt-4 border-t space-y-4">
+                  <h4 className="font-semibold text-sm">SEO (Otimização para Buscadores)</h4>
+                  <div>
+                    <Label htmlFor="meta_title">Meta Title</Label>
+                    <Input
+                      id="meta_title"
+                      value={formData.meta_title}
+                      onChange={(e) => setFormData({ ...formData, meta_title: e.target.value })}
+                      placeholder={formData.name || "Título para Google"}
+                      maxLength={60}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{formData.meta_title.length}/60 caracteres</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="meta_description">Meta Description</Label>
+                    <Textarea
+                      id="meta_description"
+                      value={formData.meta_description}
+                      onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })}
+                      placeholder="Descrição curta para resultados de busca"
+                      maxLength={160}
+                      rows={2}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">{formData.meta_description.length}/160 caracteres</p>
+                  </div>
                 </div>
                 
                 <div className="flex gap-4">

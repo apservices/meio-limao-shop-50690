@@ -95,10 +95,7 @@ const ProductDetailInfo = ({
           )}
         </div>
         <p className="text-sm md:text-base text-muted-foreground">
-          ou <span className="font-semibold text-foreground">3x de R$ {(product.price / 3).toFixed(2).replace(".", ",")}</span> sem juros
-        </p>
-        <p className="text-xs md:text-sm text-muted-foreground mt-1">
-          ou até <span className="font-medium">6x de R$ {(product.price / 6).toFixed(2).replace(".", ",")}</span> com juros
+          ou <span className="font-semibold text-foreground">até 6x de R$ {(product.price / 6).toFixed(2).replace(".", ",")}</span> sem juros
         </p>
       </div>
 
