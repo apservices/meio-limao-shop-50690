@@ -14,6 +14,7 @@ import ProductDetailInfo from "@/components/ProductDetailInfo";
 import CompleteTheLook from "@/components/CompleteTheLook";
 import SEOHead from "@/components/SEOHead";
 import Footer from "@/components/Footer";
+import SocialShareButtons from "@/components/SocialShareButtons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -144,18 +145,30 @@ const ProductDetail = () => {
             />
 
             {/* Product Info */}
-            <ProductDetailInfo
-              product={product}
-              selectedSize={selectedSize}
-              selectedColor={selectedColor}
-              onSizeChange={setSelectedSize}
-              onColorChange={setSelectedColor}
-              onAddToCart={handleAddToCart}
-              onToggleWishlist={handleToggleWishlist}
-              isInWishlist={isInWishlist(product.id)}
-              averageRating={averageRating}
-              totalReviews={totalReviews}
-            />
+            <div className="space-y-6">
+              <ProductDetailInfo
+                product={product}
+                selectedSize={selectedSize}
+                selectedColor={selectedColor}
+                onSizeChange={setSelectedSize}
+                onColorChange={setSelectedColor}
+                onAddToCart={handleAddToCart}
+                onToggleWishlist={handleToggleWishlist}
+                isInWishlist={isInWishlist(product.id)}
+                averageRating={averageRating}
+                totalReviews={totalReviews}
+              />
+              
+              {/* Social Share */}
+              <div className="pt-4 border-t">
+                <SocialShareButtons
+                  productName={product.name}
+                  productPrice={product.price}
+                  productUrl={`https://meiolimao.shop/produto/${product.id}`}
+                  productImage={getPrimaryImageUrl(productRecord)}
+                />
+              </div>
+            </div>
           </div>
 
           <Separator className="my-16" />

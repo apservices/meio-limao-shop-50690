@@ -116,7 +116,7 @@ const ProductCard = ({ product, className }: ProductCardProps) => {
           )}
         </div>
         <p className="text-[10px] md:text-xs text-muted-foreground font-light">
-          ou 3x de R$ {(price / 3).toFixed(2).replace(".", ",")}
+          até 6x de R$ {(price / 6).toFixed(2).replace(".", ",")} sem juros
         </p>
       </div>
     </div>

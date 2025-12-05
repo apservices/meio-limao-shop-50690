@@ -141,7 +141,7 @@ const Cart = () => {
                           R$ {(item.price * item.quantity).toFixed(2).replace(".", ",")}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          ou 3x de R$ {(item.price * item.quantity / 3).toFixed(2).replace(".", ",")}
+                          até 6x de R$ {(item.price * item.quantity / 6).toFixed(2).replace(".", ",")} sem juros
                         </p>
                       </div>
                     </div>
@@ -181,7 +181,7 @@ const Cart = () => {
                     <span>R$ {finalTotal.toFixed(2).replace(".", ",")}</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    ou até 6x de R$ {(finalTotal / 6).toFixed(2).replace(".", ",")} com juros
+                    até 6x de R$ {(finalTotal / 6).toFixed(2).replace(".", ",")} sem juros
                   </p>
                 </div>
               </div>
