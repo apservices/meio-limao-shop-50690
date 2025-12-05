@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { signupSchema } from "@/lib/validations";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { sendWelcomeEmail } from "@/lib/email";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -43,6 +44,11 @@ const Signup = () => {
           .update({ marketing_opt_in: marketingOptIn })
           .eq("user_id", user.id);
       }
+
+      // Enviar email de boas-vindas (não bloqueia fluxo)
+      sendWelcomeEmail(validatedData.email, validatedData.fullName).catch((err) => {
+        console.error("Failed to send welcome email:", err);
+      });
       
       toast({ 
         title: "Conta criada com sucesso!",
