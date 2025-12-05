@@ -36,13 +36,24 @@ const Signup = () => {
 
       await signUp(validatedData.email, validatedData.password, validatedData.fullName);
       
-      // Atualizar customer com marketing_opt_in
+      // Criar/atualizar customer com marketing_opt_in
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        // Usar upsert para garantir que o registro existe com marketing_opt_in correto
+        const { error: customerError } = await supabase
           .from("customers")
-          .update({ marketing_opt_in: marketingOptIn })
-          .eq("user_id", user.id);
+          .upsert({
+            user_id: user.id,
+            email: validatedData.email,
+            name: validatedData.fullName,
+            marketing_opt_in: marketingOptIn,
+          }, {
+            onConflict: 'user_id',
+          });
+        
+        if (customerError) {
+          console.error("Error saving customer preferences:", customerError);
+        }
       }
 
       // Enviar email de boas-vindas (não bloqueia fluxo)
