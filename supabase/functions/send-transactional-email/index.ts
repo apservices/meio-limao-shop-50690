@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-secret",
 };
 
 interface EmailRequest {
@@ -11,6 +11,26 @@ interface EmailRequest {
   to: string;
   data: Record<string, any>;
 }
+
+// Rate limiting storage (in-memory for edge function)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+const checkRateLimit = (identifier: string, limit: number = 3, windowMs: number = 60000): boolean => {
+  const now = Date.now();
+  const record = rateLimitMap.get(identifier);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(identifier, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+  
+  if (record.count >= limit) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+};
 
 // Meio Limão brand styles
 const brandStyles = {
@@ -277,9 +297,62 @@ serve(async (req) => {
   }
 
   try {
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Missing Supabase environment variables");
+    }
+
+    // Authentication check - accept either:
+    // 1. INTERNAL_API_SECRET header (for server-to-server calls)
+    // 2. Valid user authorization (for client-side calls from authenticated users)
+    const internalSecret = Deno.env.get("INTERNAL_API_SECRET");
+    const providedSecret = req.headers.get("x-internal-secret");
+    const authHeader = req.headers.get("authorization");
+    
+    let isAuthenticated = false;
+    let authenticatedUserId: string | null = null;
+    
+    // Check internal secret first (for server-to-server calls)
+    if (internalSecret && providedSecret === internalSecret) {
+      isAuthenticated = true;
+      console.log("[Transactional Email] Authenticated via internal secret");
+    }
+    
+    // If no internal secret match, check user auth
+    if (!isAuthenticated && authHeader) {
+      const supabase = createClient(supabaseUrl, supabaseAnonKey || supabaseServiceKey);
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      
+      if (user && !error) {
+        isAuthenticated = true;
+        authenticatedUserId = user.id;
+        console.log("[Transactional Email] Authenticated via user token");
+      }
+    }
+    
+    if (!isAuthenticated) {
+      console.warn("[Transactional Email] Unauthorized access attempt");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Rate limiting by IP
+    const clientIP = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    if (!checkRateLimit(clientIP, 3, 60000)) { // 3 emails per minute per IP
+      console.warn(`[Transactional Email] Rate limit exceeded for IP: ${clientIP}`);
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Try again later." }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
     if (!resendApiKey) {
       throw new Error("Missing RESEND_API_KEY");
@@ -316,17 +389,16 @@ serve(async (req) => {
       throw new Error(emailResult.message || "Failed to send email");
     }
 
-    console.log("[Transactional Email] Email sent successfully:", emailResult);
+    console.log("[Transactional Email] Email sent successfully:", emailResult.id);
 
     // Log to audit_logs
-    if (supabaseUrl && supabaseServiceKey) {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      await supabase.from("audit_logs").insert({
-        entity: "transactional_email",
-        action: type,
-        diff: { to, type, emailId: emailResult.id },
-      });
-    }
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    await supabase.from("audit_logs").insert({
+      entity: "transactional_email",
+      action: type,
+      actor: authenticatedUserId,
+      diff: { to, type, emailId: emailResult.id },
+    });
 
     return new Response(JSON.stringify({ success: true, emailId: emailResult.id }), {
       status: 200,
