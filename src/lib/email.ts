@@ -10,6 +10,15 @@ interface EmailResponse {
 
 const sendEmail = async (type: EmailType, to: string, data: Record<string, any>): Promise<EmailResponse> => {
   try {
+    // Get current session for authentication
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+
+    if (!accessToken) {
+      console.warn("[Email] No active session - user must be authenticated to send emails");
+      return { success: false, error: "User must be authenticated to send emails" };
+    }
+
     const { data: response, error } = await supabase.functions.invoke("send-transactional-email", {
       body: { type, to, data },
     });
