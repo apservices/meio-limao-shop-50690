@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.analyze-customer-behavior]
 verify_jwt = true
+
+[functions.send-security-notification]
+verify_jwt = true

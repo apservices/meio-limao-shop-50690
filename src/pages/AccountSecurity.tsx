@@ -7,11 +7,11 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Shield, LogOut, Clock } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Shield, LogOut, Clock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const AccountSecurity = () => {
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -19,6 +19,11 @@ const AccountSecurity = () => {
   const [sessions, setSessions] = useState<any[]>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if admin is being forced to setup 2FA
+  const forceSetup = location.state?.forceSetup || false;
+  const returnPath = location.state?.from || "/admin";
 
   useEffect(() => {
     checkMfaStatus();
@@ -78,6 +83,15 @@ const AccountSecurity = () => {
       
       if (error) throw error;
 
+      // Send security notification
+      try {
+        await supabase.functions.invoke('send-security-notification', {
+          body: { event_type: '2fa_disabled' }
+        });
+      } catch (e) {
+        console.error("Failed to send notification:", e);
+      }
+
       setMfaEnabled(false);
       toast({
         title: "2FA Desativado",
@@ -118,6 +132,28 @@ const AccountSecurity = () => {
     }
   };
 
+  const handleMfaSetupSuccess = async () => {
+    setMfaEnabled(true);
+    
+    // Send security notification
+    try {
+      await supabase.functions.invoke('send-security-notification', {
+        body: { event_type: '2fa_enabled' }
+      });
+    } catch (e) {
+      console.error("Failed to send notification:", e);
+    }
+
+    // If forced setup, redirect back to admin
+    if (forceSetup) {
+      toast({
+        title: "2FA Configurado",
+        description: "Agora você pode acessar o painel administrativo.",
+      });
+      navigate(returnPath);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <Helmet>
@@ -135,6 +171,18 @@ const AccountSecurity = () => {
               Gerencie as configurações de segurança da sua conta
             </p>
           </div>
+
+          {/* Force 2FA Alert for Admins */}
+          {forceSetup && !mfaEnabled && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Configuração Obrigatória</AlertTitle>
+              <AlertDescription>
+                Como administrador, você precisa configurar a autenticação de dois fatores (2FA) 
+                para acessar o painel administrativo. Esta é uma medida de segurança obrigatória.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* 2FA Section */}
           <div>
@@ -168,7 +216,7 @@ const AccountSecurity = () => {
                 </CardContent>
               </Card>
             ) : (
-              <TwoFactorSetup onSuccess={() => setMfaEnabled(true)} />
+              <TwoFactorSetup onSuccess={handleMfaSetupSuccess} />
             )}
           </div>
 
