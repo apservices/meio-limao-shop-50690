@@ -161,7 +161,7 @@ const Reports = () => {
       supabase
         .from("orders")
         .select("total_cents, created_at")
-        .eq("payment_status", "paid")
+        .eq("payment_status", "completed")
         .gte("created_at", startDateStr)
         .lte("created_at", endDateStr),
       supabase.from("customers").select("*", { count: "exact", head: true }),
