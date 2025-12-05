@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Mail, Phone, FileText } from "lucide-react";
+import { Search, Mail, Phone, FileText, Filter } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -18,7 +18,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import AdminLayout from "@/components/AdminLayout";
+import { subDays } from "date-fns";
 
 interface Customer {
   id: string;
@@ -28,6 +37,8 @@ interface Customer {
   document?: string;
   marketing_opt_in: boolean;
   created_at: string;
+  total_spent?: number;
+  orders_count?: number;
 }
 
 interface CustomerOrder {
@@ -35,6 +46,7 @@ interface CustomerOrder {
   order_number: number;
   total_cents: number;
   status: string;
+  payment_status: string;
   created_at: string;
 }
 
@@ -44,6 +56,9 @@ const Customers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [marketingFilter, setMarketingFilter] = useState<string>("all");
+  const [purchaseFilter, setPurchaseFilter] = useState<string>("all");
+  const [periodFilter, setPeriodFilter] = useState<string>("all");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -51,23 +66,49 @@ const Customers = () => {
   }, []);
 
   const loadCustomers = async () => {
-    const { data, error } = await supabase
+    // Load customers
+    const { data: customersData, error: customersError } = await supabase
       .from("customers")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) {
+    if (customersError) {
       toast({ title: "Erro ao carregar clientes", variant: "destructive" });
       return;
     }
 
-    setCustomers(data || []);
+    // Load orders with payment_status = completed to calculate totals
+    const { data: ordersData } = await supabase
+      .from("orders")
+      .select("customer_id, total_cents, payment_status")
+      .eq("payment_status", "completed");
+
+    // Calculate totals per customer
+    const customerStats = new Map<string, { total: number; count: number }>();
+    ordersData?.forEach((order) => {
+      if (order.customer_id) {
+        const current = customerStats.get(order.customer_id) || { total: 0, count: 0 };
+        customerStats.set(order.customer_id, {
+          total: current.total + (order.total_cents || 0),
+          count: current.count + 1,
+        });
+      }
+    });
+
+    // Merge data
+    const enrichedCustomers = customersData?.map((c) => ({
+      ...c,
+      total_spent: (customerStats.get(c.id)?.total || 0) / 100,
+      orders_count: customerStats.get(c.id)?.count || 0,
+    })) || [];
+
+    setCustomers(enrichedCustomers);
   };
 
   const loadCustomerOrders = async (customerId: string) => {
     const { data, error } = await supabase
       .from("orders")
-      .select("id, order_number, total_cents, status, created_at")
+      .select("id, order_number, total_cents, status, payment_status, created_at")
       .eq("customer_id", customerId)
       .order("created_at", { ascending: false });
 
@@ -85,20 +126,65 @@ const Customers = () => {
     setDetailsOpen(true);
   };
 
-  const filteredCustomers = customers.filter((customer) =>
-    customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.document?.includes(searchQuery)
-  );
+  const getPaymentStatusBadge = (status: string) => {
+    const config: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+      completed: { label: "Pago", variant: "default" },
+      pending: { label: "Pendente", variant: "secondary" },
+      failed: { label: "Falhou", variant: "destructive" },
+      refunded: { label: "Reembolsado", variant: "outline" },
+    };
+    const { label, variant } = config[status] || { label: status, variant: "outline" };
+    return <Badge variant={variant}>{label}</Badge>;
+  };
+
+  const filteredCustomers = customers.filter((customer) => {
+    // Search filter
+    const matchesSearch =
+      customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.document?.includes(searchQuery);
+
+    // Marketing filter
+    const matchesMarketing =
+      marketingFilter === "all" ||
+      (marketingFilter === "yes" && customer.marketing_opt_in) ||
+      (marketingFilter === "no" && !customer.marketing_opt_in);
+
+    // Purchase filter
+    const matchesPurchase =
+      purchaseFilter === "all" ||
+      (purchaseFilter === "buyers" && (customer.orders_count || 0) > 0) ||
+      (purchaseFilter === "never" && (customer.orders_count || 0) === 0);
+
+    // Period filter
+    let matchesPeriod = true;
+    if (periodFilter !== "all") {
+      const createdAt = new Date(customer.created_at);
+      const now = new Date();
+      const daysMap: Record<string, number> = {
+        "7d": 7,
+        "30d": 30,
+        "90d": 90,
+      };
+      const days = daysMap[periodFilter];
+      if (days) {
+        matchesPeriod = createdAt >= subDays(now, days);
+      }
+    }
+
+    return matchesSearch && matchesMarketing && matchesPurchase && matchesPeriod;
+  });
 
   const exportToCSV = () => {
-    const headers = ["Email", "Nome", "Telefone", "Documento", "Marketing", "Data de Cadastro"];
-    const rows = customers.map((c) => [
+    const headers = ["Email", "Nome", "Telefone", "Documento", "Marketing", "Total Gasto", "Pedidos", "Data de Cadastro"];
+    const rows = filteredCustomers.map((c) => [
       c.email,
       c.name || "",
       c.phone || "",
       c.document || "",
       c.marketing_opt_in ? "Sim" : "Não",
+      `R$ ${(c.total_spent || 0).toFixed(2)}`,
+      c.orders_count || 0,
       new Date(c.created_at).toLocaleDateString("pt-BR"),
     ]);
 
@@ -122,8 +208,9 @@ const Customers = () => {
           </Button>
         </div>
 
-        <div className="flex gap-4">
-          <div className="relative flex-1">
+        {/* Filters */}
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar por email, nome ou documento..."
@@ -132,6 +219,53 @@ const Customers = () => {
               className="pl-10"
             />
           </div>
+
+          <div className="w-[150px]">
+            <label className="text-sm font-medium mb-1 block">Marketing</label>
+            <Select value={marketingFilter} onValueChange={setMarketingFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="yes">Aceita</SelectItem>
+                <SelectItem value="no">Não aceita</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-[150px]">
+            <label className="text-sm font-medium mb-1 block">Compras</label>
+            <Select value={purchaseFilter} onValueChange={setPurchaseFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="buyers">Compradores</SelectItem>
+                <SelectItem value="never">Nunca comprou</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-[150px]">
+            <label className="text-sm font-medium mb-1 block">Período</label>
+            <Select value={periodFilter} onValueChange={setPeriodFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                <SelectItem value="90d">Últimos 90 dias</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="text-sm text-muted-foreground">
+          {filteredCustomers.length} cliente(s) encontrado(s)
         </div>
 
         <div className="bg-card rounded-lg shadow">
@@ -140,7 +274,8 @@ const Customers = () => {
               <TableRow>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Contato</TableHead>
-                <TableHead>Documento</TableHead>
+                <TableHead>Total Gasto</TableHead>
+                <TableHead>Pedidos</TableHead>
                 <TableHead>Marketing</TableHead>
                 <TableHead>Cadastro</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -149,7 +284,7 @@ const Customers = () => {
             <TableBody>
               {filteredCustomers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     Nenhum cliente encontrado
                   </TableCell>
                 </TableRow>
@@ -175,19 +310,16 @@ const Customers = () => {
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {customer.document || "-"}
+                    <TableCell className="font-medium text-primary">
+                      R$ {(customer.total_spent || 0).toFixed(2)}
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          customer.marketing_opt_in
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
+                      <Badge variant="outline">{customer.orders_count || 0}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={customer.marketing_opt_in ? "default" : "secondary"}>
                         {customer.marketing_opt_in ? "Sim" : "Não"}
-                      </span>
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-sm">
                       {new Date(customer.created_at).toLocaleDateString("pt-BR")}
@@ -238,12 +370,27 @@ const Customers = () => {
                     </dl>
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Marketing</h3>
-                    <p className="text-sm">
-                      {selectedCustomer.marketing_opt_in
-                        ? "✓ Aceita receber comunicações"
-                        : "✗ Não aceita receber comunicações"}
-                    </p>
+                    <h3 className="font-semibold mb-2">Resumo</h3>
+                    <dl className="space-y-2 text-sm">
+                      <div>
+                        <dt className="text-muted-foreground">Total Gasto (aprovado)</dt>
+                        <dd className="font-medium text-primary text-lg">
+                          R$ {(selectedCustomer.total_spent || 0).toFixed(2)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Pedidos Pagos</dt>
+                        <dd className="font-medium">{selectedCustomer.orders_count || 0}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Marketing</dt>
+                        <dd>
+                          {selectedCustomer.marketing_opt_in
+                            ? "✓ Aceita receber comunicações"
+                            : "✗ Não aceita receber comunicações"}
+                        </dd>
+                      </div>
+                    </dl>
                   </div>
                 </div>
 
@@ -258,6 +405,7 @@ const Customers = () => {
                           <TableHead>Pedido</TableHead>
                           <TableHead>Data</TableHead>
                           <TableHead>Total</TableHead>
+                          <TableHead>Pagamento</TableHead>
                           <TableHead>Status</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -269,10 +417,9 @@ const Customers = () => {
                               {new Date(order.created_at).toLocaleDateString("pt-BR")}
                             </TableCell>
                             <TableCell>R$ {(order.total_cents / 100).toFixed(2)}</TableCell>
+                            <TableCell>{getPaymentStatusBadge(order.payment_status)}</TableCell>
                             <TableCell>
-                              <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                                {order.status}
-                              </span>
+                              <Badge variant="outline">{order.status}</Badge>
                             </TableCell>
                           </TableRow>
                         ))}
