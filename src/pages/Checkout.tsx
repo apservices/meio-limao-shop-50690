@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { CepInput } from "@/components/CepInput";
 import SecurityBadges from "@/components/SecurityBadges";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 
 type ShippingOption = {
   id: string;
@@ -477,6 +478,24 @@ const Checkout = () => {
         orderId: orderData.id,
         items: orderItems.length,
       }, { actorId: currentActorId, entityId: orderData.id });
+
+      // Enviar email de confirmação de pedido (não bloqueia fluxo)
+      sendOrderConfirmationEmail(validatedData.email, {
+        customerName: validatedData.name,
+        orderId: orderData.id,
+        orderNumber: orderData.order_number,
+        items: items.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        subtotal: subtotal,
+        shipping: actualShipping,
+        discount: discount,
+        total: totalCents / 100,
+      }).catch((err) => {
+        console.error("Failed to send order confirmation email:", err);
+      });
 
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
         'create-mercado-pago-payment',
