@@ -35,6 +35,7 @@ import Looks from "./pages/Looks";
 import AdminLooks from "./pages/admin/Looks";
 import Security from "./pages/Security";
 import AccountSecurity from "./pages/AccountSecurity";
+import Verify2FA from "./pages/Verify2FA";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/contato" element={<Contact />} />
           <Route path="/seguranca" element={<Security />} />
           <Route path="/conta/seguranca" element={<AccountSecurity />} />
+          <Route path="/verify-2fa" element={<Verify2FA />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route

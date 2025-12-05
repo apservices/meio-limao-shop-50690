@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,14 +21,44 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const checkMfaAndRedirect = async (userId: string) => {
+    try {
+      // Check if user has 2FA enabled
+      const { data: mfaData } = await supabase
+        .from("user_mfa")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+
+      if (mfaData) {
+        // User has 2FA, redirect to verification page
+        navigate("/verify-2fa", { state: { from: "/" } });
+      } else {
+        // No 2FA, proceed normally
+        navigate("/");
+      }
+    } catch {
+      // No MFA record found, proceed normally
+      navigate("/");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       await signIn(email, password);
-      toast({ title: "Login realizado com sucesso!" });
-      navigate("/");
+      
+      // Get current user to check for 2FA
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        toast({ title: "Login realizado com sucesso!" });
+        await checkMfaAndRedirect(user.id);
+      } else {
+        navigate("/");
+      }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast({
@@ -84,8 +115,16 @@ const Login = () => {
 
     try {
       await verifyOtp(phone, otp);
-      toast({ title: "Login realizado com sucesso!" });
-      navigate("/");
+      
+      // Get current user to check for 2FA
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        toast({ title: "Login realizado com sucesso!" });
+        await checkMfaAndRedirect(user.id);
+      } else {
+        navigate("/");
+      }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast({
