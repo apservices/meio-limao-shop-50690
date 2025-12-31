@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Heart, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useWishlist } from "@/contexts/WishlistContext";
-import { supabase } from "@/integrations/supabase/client";
+import { useColorImagesCache } from "@/hooks/useColorImagesCache";
 import type { Product } from "@/types/product";
 import type { ColorImage } from "@/types/colorImage";
 
@@ -61,37 +61,32 @@ const ProductCard = ({ product, className }: ProductCardProps) => {
   } = product;
   
   const { toggleItem, isInWishlist } = useWishlist();
+  const { getColorImages, getCached } = useColorImagesCache();
   const [colorImages, setColorImages] = useState<ColorImage[]>([]);
   const [hoveredColor, setHoveredColor] = useState<string | null>(null);
-  const [isLoadingColors, setIsLoadingColors] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const discount = originalPrice
     ? Math.round(((originalPrice - price) / originalPrice) * 100)
     : 0;
   const defaultImage = image ?? "/placeholder.svg?height=600&width=400";
 
-  // Carregar imagens por cor quando o card é renderizado (lazy load on hover)
+  // Carregar imagens por cor (usa cache global)
   const loadColorImages = async () => {
-    if (colorImages.length > 0 || isLoadingColors) return;
+    if (loaded) return;
     
-    setIsLoadingColors(true);
-    const { data } = await supabase
-      .from("product_color_images")
-      .select("*")
-      .eq("product_id", id)
-      .order("sort_order");
-
-    if (data && data.length > 0) {
-      setColorImages(data.map(img => ({
-        id: img.id,
-        product_id: img.product_id,
-        color_name: img.color_name,
-        image_url: img.image_url,
-        is_primary: img.is_primary ?? false,
-        sort_order: img.sort_order ?? 0,
-      })));
+    // Verificar cache primeiro (síncrono)
+    const cached = getCached(id);
+    if (cached) {
+      setColorImages(cached);
+      setLoaded(true);
+      return;
     }
-    setIsLoadingColors(false);
+
+    // Buscar do banco (com cache)
+    const images = await getColorImages(id);
+    setColorImages(images);
+    setLoaded(true);
   };
 
   // Determinar a imagem a exibir
@@ -216,7 +211,6 @@ const ProductCard = ({ product, className }: ProductCardProps) => {
                 onMouseLeave={() => setHoveredColor(null)}
                 onClick={(e) => {
                   e.preventDefault();
-                  // Navegar para o produto com a cor pré-selecionada
                   window.location.href = `/produto/${id}?cor=${encodeURIComponent(color)}`;
                 }}
                 title={color}
