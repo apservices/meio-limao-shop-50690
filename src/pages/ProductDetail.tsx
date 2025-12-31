@@ -26,6 +26,7 @@ import { Leaf, Droplets, Wind } from "lucide-react";
 import { toast } from "sonner";
 import { useProductQuery } from "@/hooks/useProductsQuery";
 import { getPrimaryImageUrl, toProduct } from "@/types/product";
+import type { ColorImage } from "@/types/colorImage";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -37,6 +38,7 @@ const ProductDetail = () => {
     [data?.related]
   );
   const reviews = data?.reviews ?? [];
+  const colorImages: ColorImage[] = data?.colorImages ?? [];
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [selectedColor, setSelectedColor] = useState<string>("");
   const { addItem } = useCart();
@@ -141,7 +143,9 @@ const ProductDetail = () => {
             {/* Product Gallery */}
             <ProductGallery 
               images={galleryImages} 
-              productName={product.name} 
+              productName={product.name}
+              colorImages={colorImages}
+              selectedColor={selectedColor}
             />
 
             {/* Product Info */}

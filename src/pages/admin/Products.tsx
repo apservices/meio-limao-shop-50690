@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Edit, Sparkles, Copy } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit, Sparkles, Copy, Palette } from "lucide-react";
 import { ImageUploadWithAI } from "@/components/admin/ImageUploadWithAI";
 import { ProductVariantsEditor, ProductVariant } from "@/components/admin/ProductVariantsEditor";
+import { ColorImagesEditor, ColorImage } from "@/components/admin/ColorImagesEditor";
 import {
   Table,
   TableBody,
@@ -84,6 +85,7 @@ const Products = () => {
     meta_description: "",
   });
   const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [colorImages, setColorImages] = useState<ColorImage[]>([]);
 
   useEffect(() => {
     loadProducts();
@@ -194,6 +196,35 @@ const Products = () => {
       }
     }
 
+    // Salvar imagens por cor
+    if (colorImages.length > 0 && productId) {
+      // Deletar imagens antigas se estiver editando
+      if (editingProduct) {
+        await supabase
+          .from("product_color_images")
+          .delete()
+          .eq("product_id", productId);
+      }
+
+      // Inserir novas imagens
+      const imagesToInsert = colorImages.map(img => ({
+        product_id: productId,
+        color_name: img.color_name,
+        image_url: img.image_url,
+        is_primary: img.is_primary,
+        sort_order: img.sort_order,
+      }));
+
+      const { error: imagesError } = await supabase
+        .from("product_color_images")
+        .insert(imagesToInsert);
+
+      if (imagesError) {
+        console.error("Erro ao salvar imagens por cor:", imagesError);
+        toast({ title: "Produto salvo, mas erro nas imagens por cor", variant: "destructive" });
+      }
+    }
+
     toast({ title: editingProduct ? "Produto atualizado!" : "Produto criado!" });
     setDialogOpen(false);
     resetForm();
@@ -236,7 +267,29 @@ const Products = () => {
       meta_description: "",
     });
     loadVariants(product.id);
+    loadColorImages(product.id);
     setDialogOpen(true);
+  };
+
+  const loadColorImages = async (productId: string) => {
+    const { data } = await supabase
+      .from("product_color_images")
+      .select("*")
+      .eq("product_id", productId)
+      .order("sort_order");
+    
+    if (data) {
+      setColorImages(data.map(img => ({
+        id: img.id,
+        product_id: img.product_id,
+        color_name: img.color_name,
+        image_url: img.image_url,
+        is_primary: img.is_primary ?? false,
+        sort_order: img.sort_order ?? 0,
+      })));
+    } else {
+      setColorImages([]);
+    }
   };
 
   const loadVariants = async (productId: string) => {
@@ -285,6 +338,7 @@ const Products = () => {
       meta_description: "",
     });
     setVariants([]);
+    setColorImages([]);
   };
 
   const handleImageAnalyzed = (data: {
@@ -461,6 +515,22 @@ const Products = () => {
                   />
                   <p className="text-xs text-muted-foreground mt-1">Separar por vírgula</p>
                 </div>
+
+                {/* Imagens por Cor */}
+                {formData.colors && formData.colors.trim() && (
+                  <div className="pt-4 border-t">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Palette className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold text-foreground">Fotos por Cor/Estampa</h3>
+                    </div>
+                    <ColorImagesEditor
+                      productId={editingProduct?.id}
+                      colors={formData.colors.split(',').map(c => c.trim()).filter(c => c)}
+                      colorImages={colorImages}
+                      onChange={setColorImages}
+                    />
+                  </div>
+                )}
 
                 {/* Variantes de Estoque */}
                 <div className="pt-4 border-t">

@@ -8,6 +8,7 @@ import type {
 } from "@/types/product";
 import { getPrimaryImageUrl } from "@/types/product";
 import { getMockProductsAsProductRecords } from "@/data/products";
+import type { ColorImage } from "@/types/colorImage";
 
 interface ProductsQueryResult {
   products: ProductWithRelations[];
@@ -19,6 +20,7 @@ interface ProductQueryResult {
   product: ProductWithRelations;
   reviews: NormalizedReview[];
   related: ProductWithRelations[];
+  colorImages: ColorImage[];
   isFallback: boolean;
 }
 
@@ -151,6 +153,7 @@ const fetchProduct = async (productId: string): Promise<ProductQueryResult> => {
       product: fallbackProduct,
       reviews: buildMockReviews(fallbackProduct),
       related,
+      colorImages: [],
       isFallback: true,
     };
   }
@@ -185,6 +188,17 @@ const fetchProduct = async (productId: string): Promise<ProductQueryResult> => {
 
     if (reviewsError) throw reviewsError;
 
+    // Buscar imagens por cor
+    const { data: colorImagesData, error: colorImagesError } = await supabase
+      .from("product_color_images")
+      .select("*")
+      .eq("product_id", productId)
+      .order("sort_order");
+
+    if (colorImagesError) {
+      console.warn("Erro ao buscar imagens por cor:", colorImagesError);
+    }
+
     let relatedQuery = supabase
       .from("products")
       .select(
@@ -210,6 +224,14 @@ const fetchProduct = async (productId: string): Promise<ProductQueryResult> => {
       product: data as ProductWithRelations,
       reviews: normalizeReviews((reviewsData as ReviewWithCustomer[]) ?? []),
       related: (relatedData ?? []) as ProductWithRelations[],
+      colorImages: (colorImagesData ?? []).map(img => ({
+        id: img.id,
+        product_id: img.product_id,
+        color_name: img.color_name,
+        image_url: img.image_url,
+        is_primary: img.is_primary ?? false,
+        sort_order: img.sort_order ?? 0,
+      })),
       isFallback: false,
     };
   } catch (err) {
@@ -233,6 +255,7 @@ const fetchProduct = async (productId: string): Promise<ProductQueryResult> => {
       product: fallbackProduct,
       reviews: buildMockReviews(fallbackProduct),
       related,
+      colorImages: [],
       isFallback: true,
     };
   }
