@@ -1,24 +1,57 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { ColorImage } from "@/types/colorImage";
 
 interface ProductGalleryProps {
   images: string[];
   productName: string;
+  colorImages?: ColorImage[];
+  selectedColor?: string;
 }
 
-const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
+const ProductGallery = ({ 
+  images, 
+  productName, 
+  colorImages = [],
+  selectedColor 
+}: ProductGalleryProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   
-  const mainImages = images.length > 0 ? images : ["/placeholder.svg?height=800&width=600"];
+  // Determinar quais imagens exibir baseado na cor selecionada
+  const displayImages = useMemo(() => {
+    if (selectedColor && colorImages.length > 0) {
+      const colorSpecificImages = colorImages
+        .filter(img => img.color_name.toLowerCase() === selectedColor.toLowerCase())
+        .sort((a, b) => {
+          // Imagem primária primeiro
+          if (a.is_primary && !b.is_primary) return -1;
+          if (!a.is_primary && b.is_primary) return 1;
+          return a.sort_order - b.sort_order;
+        })
+        .map(img => img.image_url);
+      
+      if (colorSpecificImages.length > 0) {
+        return colorSpecificImages;
+      }
+    }
+    
+    // Fallback para imagens gerais do produto
+    return images.length > 0 ? images : ["/placeholder.svg?height=800&width=600"];
+  }, [images, colorImages, selectedColor]);
+
+  // Resetar índice quando a cor muda
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [selectedColor]);
 
   const handlePrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? mainImages.length - 1 : prev - 1));
+    setCurrentIndex((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev === mainImages.length - 1 ? 0 : prev + 1));
+    setCurrentIndex((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
   };
 
   return (
@@ -26,14 +59,14 @@ const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
       {/* Main Image */}
       <div className="sticky top-4 relative aspect-[3/4] rounded-3xl overflow-hidden bg-muted group">
         <img
-          src={mainImages[currentIndex]}
-          alt={`${productName} - Imagem ${currentIndex + 1}`}
-          className="w-full h-full object-cover select-none"
+          src={displayImages[currentIndex]}
+          alt={`${productName}${selectedColor ? ` - ${selectedColor}` : ''} - Imagem ${currentIndex + 1}`}
+          className="w-full h-full object-cover select-none transition-opacity duration-300"
           loading="eager"
         />
         
         {/* Navigation Arrows */}
-        {mainImages.length > 1 && (
+        {displayImages.length > 1 && (
           <>
             <Button
               variant="secondary"
@@ -54,20 +87,27 @@ const ProductGallery = ({ images, productName }: ProductGalleryProps) => {
           </>
         )}
 
+        {/* Color indicator */}
+        {selectedColor && colorImages.some(img => img.color_name.toLowerCase() === selectedColor.toLowerCase()) && (
+          <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-sm font-medium shadow-lg">
+            {selectedColor}
+          </div>
+        )}
+
         {/* Image Counter */}
-        {mainImages.length > 1 && (
+        {displayImages.length > 1 && (
           <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-medium">
-            {currentIndex + 1} / {mainImages.length}
+            {currentIndex + 1} / {displayImages.length}
           </div>
         )}
       </div>
 
       {/* Thumbnail Grid */}
-      {mainImages.length > 1 && (
+      {displayImages.length > 1 && (
         <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
-          {mainImages.map((image, index) => (
+          {displayImages.map((image, index) => (
             <button
-              key={index}
+              key={`${image}-${index}`}
               onClick={() => setCurrentIndex(index)}
               className={cn(
                 "relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-300",
